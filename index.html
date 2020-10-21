@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Paint</title>
+    <script src="js/MultiStreamsMixer.js"></script>
+    <script src="js/index.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body style="margin: 0px;font-family:Microsoft JhengHei;">
+
+
+    <div id="constraint">
+        <div class="container">
+            <div class="topbar">
+                <div class="topbarDiv">
+
+                    <div style="display:inline-block;">
+                        <div style="display: inline-block;margin-left: 12px;">
+                            Camera_1：
+                        </div>
+                        <select name="selectCamera_1" id="selectCamera_1"
+                            style="width: 120px;height: 24px;margin: 6px;margin-left: 0px;">
+                        </select>
+                    </div>
+                    <div id="camera2Div" style="display:none">
+                        <div style="display: inline-block;margin-left: 12px;">
+                            Camera_2：
+                        </div>
+                        <select name="selectCamera_2" id="selectCamera_2"
+                            style="width: 120px;height: 24px;margin: 6px;margin-left: 0px;">
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar" style="border-radius: 6px;">
+                <!-- sidebar -->
+                <div style="display: flex;flex-wrap: wrap;justify-content:center;margin: 10px;user-select: none">
+
+                    <div class="menuBtn" id="ZoomIn">
+                        ZoomIn
+                    </div>
+                    <div class="menuBtn" id="ZoomOut">
+                        ZoomOut
+                    </div>
+                    <div class="menuBtn" id="MoveOrDraw" data-moveevent='1'>
+                        MoveType
+                    </div>
+                    <!-- <div class="menuBtn"><input type="checkbox" checked>RecordPaint</div> -->
+                    <div class="menuBtn" id="playVideo" style="display: none;">
+                        PlayVideo
+                    </div>
+                    <div class="menuBtn" id="startRecorder">
+                        StartRecorder
+                    </div>
+                    <div class="menuBtn" id="stopRecorder">
+                        StopRecorder
+                    </div>
+                    <div class="menuBtn" id="secondCamera"  style="display: none;">
+                        SecondCamera
+                    </div>
+                    <div class="menuBtn" id="switchCamera" style="display: none;">
+                        SwitchCamera
+                    </div>
+
+                </div>
+
+            </div>
+            <div id="main">
+                <div id="canvasDiv" style="border-radius: 6px;">
+                    <span id="recorderDot"></span>
+
+                    <canvas id="canvasPaint">
+
+                    </canvas>
+                    <video id="inputVideo" autoplay controls>
+
+                    </video>
+                    <video id="secondVideo" autoplay controls>
+
+                    </video>
+                </div>
+            </div>
+        </div>
+
+        <video id="mixStreamVideo" style="display: none;width: 80vw;height: calc(80vw / 16 * 9);margin: 30px auto;">
+        </video>
+
+    </div>
+
+</body>
+
+</html>

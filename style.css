@@ -1,0 +1,117 @@
+#constraint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+}
+
+.container {
+  display: grid;
+  width: 80vw;
+  height: 75vh;
+  grid-template-columns: 180px calc(80vw - 180px);
+  grid-template-rows: 50px calc(75vh - 50px);
+  grid-gap: 0.75rem;
+  /* margin: auto; */
+}
+
+.container div {
+  text-align: center;
+  background-color: whitesmoke;
+}
+
+.container .topbar {
+  border-radius: 6px;
+  grid-column-start: 1;
+  grid-column-end: 3;
+  align-items: center;
+  display: flex;
+}
+.container .topbar .topbarDiv {
+}
+
+.container .topbar .menuBtn {
+}
+
+.container .sidebar .menuBtn {
+  width: 80%;
+  cursor: pointer;
+  padding: 4px 8px 4px 8px;
+  background-color:darkgrey;
+  border-radius: 4px;
+  margin: 4px;
+  z-index: 100;
+}
+
+.container .sidebar .menuBtn:hover {
+  opacity: 0.7;
+}
+
+.container #main {
+  width: 100%;
+  height: 100%;
+  margin: auto;
+  background-color: whitesmoke;
+  display: flex;
+}
+
+.container #main #canvasDiv {
+  overflow: hidden;
+  position: relative;
+  margin: auto;
+  background-color: gray;
+  z-index: 400;
+}
+
+.dot {
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  background-color: red;
+  border-radius: 50%;
+  display: block;
+  top: 3%;
+  left: 2%;
+  z-index: 1000;
+}
+
+
+#canvasPaint {
+  width: 100%;
+  height: 100%;
+  z-index: 200;
+  display: block;
+  position: absolute;
+  transform-origin: center;
+  transform: scale(1);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#inputVideo {
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  display: block;
+  position: absolute;
+  transform-origin: center;
+  transform: scale(1);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#secondVideo {
+  width: 33%;
+  height: 33%;
+  z-index: 100;
+  display: none;
+  position: absolute;
+  right: 0%;
+  bottom: 0%;
+}
