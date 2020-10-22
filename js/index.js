@@ -5,7 +5,6 @@ function onload() {
     const aspectRatio_16_9 = 1.77778
     const aspectRatio_4_3 = 1.33334
     var currentRatio = aspectRatio_16_9
-    var currentWidth = null, currentHeight = null
 
     var canvasDiv = document.getElementById("canvasDiv")
     var inputVideo = document.getElementById("inputVideo")
@@ -13,15 +12,15 @@ function onload() {
     var canvasPaint = document.getElementById("canvasPaint")
     var zoomIn = document.getElementById("ZoomIn")
     var zoomOut = document.getElementById("ZoomOut")
-    var move_or_draw = document.getElementById("MoveOrDraw")
+    var mouseActionChange = document.getElementById("MoveOrDraw")
     var playVideo = document.getElementById("playVideo")
     var startRecorder = document.getElementById("startRecorder")
     var stopRecorder = document.getElementById("stopRecorder")
     var selectCamera_1 = document.getElementById("selectCamera_1")
-
-    var zoomRatio = 1.0
-    var streamArray = []
-    var size = { width: 1920, height: 1080 }
+    var recoderPaintCheck = document.getElementById("recoderCheck")
+    var recorderDot = document.getElementById("recorderDot")
+    var clearCanvas = document.getElementById("clearCanvas")
+    var zoomRatio = 1.0, zoomCounter = 0;
 
     var reszieTimeOutEvent = null
 
@@ -38,11 +37,7 @@ function onload() {
 
     })
 
-    getUserMedia()
-
-    function fract(num) {
-        return parseFloat((num - Math.trunc(num)).toFixed(10))
-    }
+    getUserMedia().catch(err => { console.log(err) })
 
     function setDisplaySize(aspectRatio) {
 
@@ -109,30 +104,37 @@ function onload() {
 
         let devices = []
 
+        // custom device okiocam parms
         let set_okiocam_constraints = function (deviceId) {
             constraints.video.width = 1920
             constraints.video.height = 1080
             constraints.video.deviceId = deviceId
-            constraints.video.frameRate = {
-                max: 30,
-                ideal: 30,
-                min: 24
-            }
+            constraints.video.frameRate = { max: 30, ideal: 30, min: 24 }
         }
 
+        // other deicve webcam parms
         let set_othercam_constraints = function (deviceId) {
-            constraints.video.deviceId = deviceId;
+            constraints.video.deviceId = deviceId
+            constraints.video.width = { min: 640, ideal: 1920, max: 1920 }
+            constraints.video.height = { min: 360, ideal: 1080, max: 1080 }
+            constraints.video.frameRate = { max: 30 }
+            constraints.video.aspectRatio = 1.777777778
         }
 
-        if (deiveName && deiveName.split(' ')[0] == 'OKIOCAM' && deviceId)
-            set_okiocam_constraints(deviceId)
+        // select change device
+        if (deiveName) {
+            if (deiveName.split(' ')[0] == 'OKIOCAM' && deviceId)
+                set_okiocam_constraints(deviceId)
 
-        if (deiveName && deiveName.split(' ')[0] != 'OKIOCAM' && deviceId)
-            set_othercam_constraints(deviceId)
+            if (deiveName.split(' ')[0] != 'OKIOCAM' && deviceId)
+                set_othercam_constraints(deviceId)
+        }
 
         // frist init video
         if (!deviceId && !deiveName) {
             devices = await getDeviceList()
+            console.log(devices)
+            console.log(devices.length && devices[0].label == '')
             // device is OKIOCAM
             if (devices[0].label.split(' ')[0] == 'OKIOCAM')
                 set_okiocam_constraints(devices[0].deviceId)
@@ -142,33 +144,29 @@ function onload() {
 
         let currentDevice = deiveName || devices[0].label
 
-        try {
+        const videoStream = await navigator.mediaDevices.getUserMedia(constraints)
 
-            const videoStream = await navigator.mediaDevices.getUserMedia(constraints)
-            // frist access camera is reload
-            if (devices.length && devices[0].label == '')
-                location.reload()
+        // frist access camera is reload
+        if (devices.length && devices[0].label == '')
+            location.reload()
 
-            const videoStreamWidth = videoStream.getVideoTracks()[0].getSettings().width
-            const videoStreamHeight = videoStream.getVideoTracks()[0].getSettings().height
-            const videoStreamRatio = videoStream.getVideoTracks()[0].getSettings().aspectRatio.toFixed(5)
+        const videoStreamWidth = videoStream.getVideoTracks()[0].getSettings().width
+        const videoStreamHeight = videoStream.getVideoTracks()[0].getSettings().height
+        const videoStreamRatio = videoStream.getVideoTracks()[0].getSettings().aspectRatio.toFixed(5)
 
-            canvasPaint.width = videoStreamWidth
-            canvasPaint.height = videoStreamHeight
+        canvasPaint.width = videoStreamWidth
+        canvasPaint.height = videoStreamHeight
 
-            if (videoStreamRatio === '1.33333')
-                currentRatio = aspectRatio_4_3
+        if (videoStreamRatio === '1.33333')
+            currentRatio = aspectRatio_4_3
 
-            if (videoStreamRatio === '1.77778')
-                currentRatio = aspectRatio_16_9
+        if (videoStreamRatio === '1.77778')
+            currentRatio = aspectRatio_16_9
 
-            setDisplaySize(currentRatio)
-            handleStream(inputVideo, videoStream)
-            registerMouseEvent()
-
-        } catch (error) {
-            console.log(error)
-        }
+        setDisplaySize(currentRatio)
+        handleStream(inputVideo, videoStream)
+        mergeStream(videoStream)
+        registerMouseEvent()
 
     }
 
@@ -192,160 +190,94 @@ function onload() {
         };
     }
 
+    /**
+     * if recorder canvas checked is true
+     * mix canavs stream and video stream
+     */
+    function mergeStream(mediaStream) {
 
-    function initialVideo() {
+        if (recoderPaintCheck.checked) {
 
-        // async function getUserMedia() {
+            const canvasStream = canvasPaint.captureStream(30)
+            const recorderWidth = mediaStream.getVideoTracks()[0].getSettings().width
+            const recorderHeight = mediaStream.getVideoTracks()[0].getSettings().height
 
-        //     let constraints = {
-        //         audio: true,
-        //         video: {}
-        //     }
+            mediaStream.fullcanvas = true
+            mediaStream.width = recorderWidth
+            mediaStream.height = recorderHeight
+            mediaStream.top = 0
+            mediaStream.left = 0
 
-        //     // get camera devices list
-        //     let devices = await getDeviceList()
+            canvasStream.width = recorderWidth
+            canvasStream.height = recorderHeight
+            canvasStream.top = 0
+            canvasStream.left = 0
 
-        //     // device name is null
-        //     if (devices[0].label == '') {
-        //         constraints = {
-        //             audio: true,
-        //             video: true
-        //         }
-        //     }
+            const mixer = new MultiStreamsMixer([mediaStream, canvasStream])
+            mixer.frameInterval = 30;
+            mixer.startDrawingFrames();
 
-        //     // device name is OKIOCAM
-        //     if (devices[0].label.split(' ')[0] == 'OKIOCAM') {
-        //         constraints.video.width = 1920
-        //         constraints.video.height = 1080
-        //         constraints.video.deviceId = devices[0].deviceId
-        //         constraints.video.frameRate = {
-        //             max: 30,
-        //             ideal: 30,
-        //             min: 24
-        //         }
-        //     }
+            const mixStream = mixer.getMixedStream()
 
-        //     // get media stream
-        //     const videoStream = await navigator.mediaDevices.getUserMedia(constraints)
-        //     const videoStreamWidth = videoStream.getVideoTracks()[0].getSettings().width
-        //     const videoStreamHeight = videoStream.getVideoTracks()[0].getSettings().height
-        //     const videoStreamRatio = (videoStreamWidth / videoStreamHeight).toFixed(5)
+            handleRecorder(mixStream)
 
-        //     canvasPaint.width = videoStreamWidth
-        //     canvasPaint.height = videoStreamHeight
+        } else {
+            handleRecorder(mediaStream)
+        }
+    }
 
-        //     if (videoStreamRatio === '1.33333')
-        //         currentRatio = aspectRatio_4_3
+    function handleRecorder(mediaStream) {
 
-        //     if (videoStreamRatio === '1.77778')
-        //         currentRatio = aspectRatio_16_9
+        let chunks = []
+        let canvasRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm;codecs=VP8' })
 
-        //     registerMouseEvent()
+        canvasRecorder.ondataavailable = function (e) {
 
-        //     // set video and canvas display
-        //     setDisplaySize(currentRatio)
+            const blob = new Blob([e.data], { 'type': 'video/webm' })
 
-        //     // get canvas stream
-        //     const canvasStream = canvasPaint.captureStream(30)
+            chunks.push(blob)
+        }
 
-        //     handleStream(videoStream, 'video')
+        canvasRecorder.onstop = function (e) {
 
-        //     mixMediaStream([videoStream, canvasStream], videoStreamWidth, videoStreamHeight)
+            console.log('stop')
+            recorderDot.classList.remove('dot')
+            recoderPaintCheck.disabled = false
 
-        // }
+            let totalVideo = new Blob(chunks, { 'type': 'video/webm' })
 
-        // function handleRecorder(mediaStream) {
+            console.log(totalVideo)
 
-        //     let chunks = []
-        //     let canvasRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm;codecs=VP9' })
+            console.log(URL.createObjectURL(totalVideo))
 
-        //     canvasRecorder.ondataavailable = function (e) {
+            chunks = [];
+        }
 
-        //         const blob = new Blob([e.data], { 'type': 'video/webm' })
+        startRecorder.onclick = () => {
 
-        //         chunks.push(blob)
-        //     }
+            console.log('start')
+            recorderDot.classList.add('dot')
 
-        //     canvasRecorder.onstop = function (e) {
+            recoderPaintCheck.disabled = true
+            canvasRecorder.start(1000)
 
-        //         let totalVideo = new Blob(chunks, { 'type': 'video/webm' })
+        }
 
-        //         console.log(totalVideo)
-        //         console.log(URL.createObjectURL(totalVideo))
-
-        //     }
-
-        //     startRecorder.onclick = () => {
-        //         console.log('start')
-        //         canvasRecorder.start(1000)
-        //     }
-
-        //     stopRecorder.onclick = () => {
-
-        //         console.log('stop')
-        //         canvasRecorder.stop()
-        //     }
-
-        // }
-
-        // function handleStream(mediaStream, type) {
-
-        //     if (type === 'video') {
-
-        //         if (inputVideo.srcObject) {
-        //             const stream = inputVideo.srcObject;
-        //             const tracks = stream.getTracks();
-        //             tracks.forEach(function (track) {
-        //                 track.stop();
-        //             });
-        //             inputVideo.srcObject = null;
-        //         }
-
-        //         inputVideo.srcObject = mediaStream;
-        //         inputVideo.onloadedmetadata = function (e) {
-        //             inputVideo.play();
-        //         };
-
-        //     }
-
-        // }
-
-        // function mixMediaStream(streamArray, width, height) {
-
-        //     // streamArray[0].fullcanvas = true;
-        //     streamArray[0].width = width
-        //     streamArray[0].height = height
-
-        //     streamArray[1].width = width
-        //     streamArray[1].height = height;
-
-        //     streamArray[0].top = 150;
-        //     streamArray[0].left = 150;
-
-        //     const mixer = new MultiStreamsMixer([streamArray[0]]);
-
-        //     mixer.frameInterval = 30;
-        //     mixer.startDrawingFrames();
-
-        //     const mixStream = mixer.getMixedStream()
-
-        //     handleRecorder(mixStream)
-
-        // }
-
-        // getUserMedia()
+        stopRecorder.onclick = () => {
+            canvasRecorder.stop()
+        }
 
     }
 
     function registerMouseEvent() {
 
-        reSetTopLeftScale();
+        resetTopLeftScale();
 
         let drawCtx = canvasPaint.getContext('2d');
         drawCtx.strokeStyle = 'red';
-        drawCtx.lineWidth = 5;
-
-        console.log(drawCtx.strokeStyle)
+        drawCtx.lineWidth = 6;
+        drawCtx.lineJoin = 'round';
+        drawCtx.lineCap = 'round';
 
         // When true, moving the mouse draws on the canvas or drag video and canvas
         let isDrawing = false, isDraging = false;
@@ -354,10 +286,11 @@ function onload() {
         let maxLeft = 0, maxTop = 0;
 
         function mouseDown(e) {
+
             e.stopPropagation()
-            canvasDiv.style.cursor = 'pointer'
+
             // move video and canvas
-            if (move_or_draw.dataset.moveevent === '0' && zoomRatio > 1.0) {
+            if (mouseActionChange.dataset.moveevent === '0' && zoomRatio > 1.0) {
 
                 maxLeft = (inputVideo.getBoundingClientRect().width - canvasDiv.getBoundingClientRect().width) / 2
                 maxTop = (inputVideo.getBoundingClientRect().height - canvasDiv.getBoundingClientRect().height) / 2
@@ -368,17 +301,20 @@ function onload() {
             }
 
             // draw canvas to video
-            if (move_or_draw.dataset.moveevent === '1') {
+            if (mouseActionChange.dataset.moveevent === '1') {
                 AstartX = e.offsetX;
                 AstartY = e.offsetY;
                 isDrawing = true;
             }
+
+            canvasDiv.style.cursor = 'pointer'
 
         }
 
         function mouseMove(e) {
             e.stopPropagation()
             if (isDrawing === true) {
+
                 drawCanvasLine(drawCtx, AstartX, AstartY, e.offsetX, e.offsetY);
                 AstartX = e.offsetX;
                 AstartY = e.offsetY;
@@ -447,11 +383,14 @@ function onload() {
                 isDraging = false;
             }
 
+            canvasDiv.style.cursor = ''
+
         }
 
         function drawCanvasLine(drawCtx, x1, y1, x2, y2) {
 
             let ratio = canvasPaint.width / parseInt(canvasPaint.getBoundingClientRect().width);
+
             ratio *= zoomRatio;
 
             x1 *= ratio;
@@ -486,18 +425,23 @@ function onload() {
         canvasDiv.onmouseup = mouseUp;
         canvasDiv.onmouseout = mouseOut;
 
+        clearCanvas.onclick = () =>{
+            drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+        }
+
+
     }
 
     /**
-    * in zoom action set inputvideo and canvasPaint element top left scale
+    * zoom in and out action set inputvideo and canvasPaint element top left scale
     */
-    function zoomSetTopLeftScale(newLeft, newTop, zoomRatio) {
+    function zoomSetTopLeftScale(left, top, zoomRatio) {
 
-        inputVideo.style.left = newLeft + 'px';
-        inputVideo.style.top = newTop + 'px';
+        inputVideo.style.left = left + 'px';
+        inputVideo.style.top = top + 'px';
+        canvasPaint.style.left = left + 'px';
+        canvasPaint.style.top = top + 'px';
         inputVideo.style.transform = "scale(" + zoomRatio + ")";
-        canvasPaint.style.left = newLeft + 'px';
-        canvasPaint.style.top = newTop + 'px';
         canvasPaint.style.transform = "scale(" + zoomRatio + ")";
 
     }
@@ -505,76 +449,77 @@ function onload() {
     /**
      * reset inputvideo and canvasPaint element top left scale
      */
-    function reSetTopLeftScale() {
+    function resetTopLeftScale() {
         zoomRatio = 1.0;
-        inputVideo.style.top = "0px";
-        inputVideo.style.left = "0px";
-        canvasPaint.style.top = "0px";
-        canvasPaint.style.left = "0px";
+        zoomCounter = 0;
+        inputVideo.style.top = 0 + 'px';
+        inputVideo.style.left = 0 + 'px';
+        canvasPaint.style.top = 0 + 'px';
+        canvasPaint.style.left = 0 + 'px';
         inputVideo.style.transform = "scale(" + zoomRatio + ")";
         canvasPaint.style.transform = "scale(" + zoomRatio + ")";
     }
 
     zoomIn.onclick = () => {
 
-        let ratio = fract(zoomRatio) * 10
+        if (zoomRatio < 2.5) {
 
-        if (zoomRatio < 1.9) {
+            zoomRatio += 0.1
 
-            zoomRatio += 0.1;
             let currentLeft = parseFloat(inputVideo.style.left)
-            let newLeft = (currentLeft * 1 / ratio) + currentLeft
+            let newLeft = (currentLeft * 1 / zoomCounter) + currentLeft
             let currentTop = parseFloat(inputVideo.style.top)
-            let newTop = (currentTop * 1 / ratio) + currentTop
+            let newTop = (currentTop * 1 / zoomCounter) + currentTop
 
             // set inputVideo and canvasPaint offset
             zoomSetTopLeftScale(newLeft, newTop, zoomRatio)
+            zoomCounter += 1
+
         }
 
     }
 
     zoomOut.onclick = () => {
 
-        let ratio = fract(zoomRatio) * 10
+        if (zoomRatio > 1.0) {
 
-        if (zoomRatio > 1.0)
             zoomRatio -= 0.1;
 
-        if (zoomRatio == 1) {
-
-            reSetTopLeftScale()
-
-        }
-        else {
-
             let currentLeft = parseFloat(inputVideo.style.left)
-            let newLeft = (currentLeft * -1 / ratio) + currentLeft
-
+            let newLeft = (currentLeft * -1 / zoomCounter) + currentLeft
             let currentTop = parseFloat(inputVideo.style.top)
-            let newTop = (currentTop * -1 / ratio) + currentTop
+            let newTop = (currentTop * -1 / zoomCounter) + currentTop
 
-            // set inputVideo and canvasPaint
+            // set inputVideo and canvasPaint offset
             zoomSetTopLeftScale(newLeft, newTop, zoomRatio)
+            zoomCounter -= 1
+
+            if (zoomRatio == 1)
+                resetTopLeftScale()
 
         }
 
     }
 
-    move_or_draw.onclick = () => {
+    mouseActionChange.onclick = () => {
 
-        if (move_or_draw.dataset.moveevent === '1') {
-            move_or_draw.innerHTML = 'DrawType';
-            move_or_draw.dataset.moveevent = '0';
+        if (mouseActionChange.dataset.moveevent === '1') {
+            mouseActionChange.innerHTML = 'DrawType';
+            mouseActionChange.dataset.moveevent = '0';
         }
         else {
-            move_or_draw.innerHTML = 'MoveType';
-            move_or_draw.dataset.moveevent = '1'
+            mouseActionChange.innerHTML = 'MoveType';
+            mouseActionChange.dataset.moveevent = '1'
         }
 
     }
 
     selectCamera_1.onchange = function () {
-        getUserMedia(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text)
+        getUserMedia(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text).catch(err => { console.log(err) })
+    }
+
+    recoderPaintCheck.onchange = () => {
+        mergeStream(inputVideo.srcObject)
     }
 
 

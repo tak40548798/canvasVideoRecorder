@@ -9,9 +9,9 @@
 
 .container {
   display: grid;
-  width: 80vw;
+  width: 85vw;
   height: 75vh;
-  grid-template-columns: 180px calc(80vw - 180px);
+  grid-template-columns: 180px calc(85vw - 180px);
   grid-template-rows: 50px calc(75vh - 50px);
   grid-gap: 0.75rem;
   /* margin: auto; */
@@ -67,14 +67,22 @@
 
 .dot {
   position: absolute;
-  height: 20px;
-  width: 20px;
+  height: 1.2rem;
+  width: 1.2rem;
   background-color: red;
   border-radius: 50%;
   display: block;
-  top: 3%;
-  left: 2%;
+  top: 2%;
+  left: 1.5%;
   z-index: 1000;
+  animation: recorderDotAnime 3s;
+  animation-iteration-count:infinite;
+  animation-timing-function:ease-out;
+}
+
+@keyframes recorderDotAnime {
+  50% {opacity: 50%;}
+  75% {opacity: 75%;}
 }
 
 
