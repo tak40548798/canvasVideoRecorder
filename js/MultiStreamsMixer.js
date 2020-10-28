@@ -9,6 +9,7 @@
 // Muaz Khan     - www.MuazKhan.com
 // MIT License   - www.WebRTC-Experiment.com/licence
 // --------------------------------------------------
+/* eslint-disable */
 
 function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
@@ -369,7 +370,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         if ('captureStream' in canvas) {
             capturedStream = canvas.captureStream();
         } else if ('mozCaptureStream' in canvas) {
-            capturedStream = canvas.mozCaptureStream();
+            // capturedStream = canvas.mozCaptureStream();
         } else if (!self.disableLogs) {
             console.error('Upgrade to latest Chrome or otherwise enable this flag: chrome://flags/#enable-experimental-web-platform-features');
         }
