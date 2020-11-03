@@ -46,6 +46,15 @@
   z-index: 100;
 }
 
+.container .sidebar .inlineBtn {
+  width: 80%;
+  padding: 4px 8px 4px 8px;
+  background-color: darkgrey;
+  border-radius: 4px;
+  margin: 4px;
+  z-index: 100;
+}
+
 .container .sidebar .menuBtn:hover {
   opacity: 0.7;
 }

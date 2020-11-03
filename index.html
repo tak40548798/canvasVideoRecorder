@@ -6,8 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Canvas Paint</title>
-    <script src="js/MultiStreamsMixer.js"></script>
-    <script type="module" src="js/wheelzoom.js"></script>
+    <script src="lib/MultiStreamsMixer.js"></script>
     <script type="module" src="js/index.js"></script>
     
     <link rel="stylesheet" href="style.css">
@@ -37,6 +36,7 @@
                             style="width: 120px;height: 24px;margin: 6px;margin-left: 0px;">
                         </select>
                     </div>
+
                 </div>
             </div>
             <div class="sidebar" style="border-radius: 6px;">
@@ -52,7 +52,7 @@
                     <div class="menuBtn" id="MoveOrDraw" data-moveevent='1'>
                         MoveType
                     </div>
-                    <div class="menuBtn"><input id="recoderCheck" type="checkbox" checked>RecordPaint</div>
+                    <div class="inlineBtn"><input id="recoderCheck" type="checkbox" checked>RecordPaint</div>
                     <div class="menuBtn" id="playVideo" style="display: none;">
                         PlayVideo
                     </div>
@@ -65,11 +65,21 @@
                     <div class="menuBtn" id="clearCanvas">
                         ClearCanvas
                     </div>
-                    <div class="menuBtn" id="secondCamera"  style="display: none;">
-                        SecondCamera
+                    <div class="inlineBtn"><input id="drawStates" type="checkbox">Eraser</div>
+
+                    <div class="inlineBtn" style="display: flex;justify-items: start;">
+                        <input style="margin:auto" type="color" name="colorPicker" id="colorPicker" >
+                        <input style="width: 40%;margin:auto;" type="number" name="lineWidth" id="lineWidth"
+                        value=10 min="5" max="50" step="5">
                     </div>
-                    <div class="menuBtn" id="switchCamera" style="display: none;">
-                        SwitchCamera
+
+                    <div class="inlineBtn" style="display: flex;justify-items: start;" stylepseudo=":hover {color: red}">
+                        <div id="undo" class="menuBtn" style="background-color: aliceblue;max-width: 30%;">
+                            undo
+                        </div>
+                        <div id="redo" class="menuBtn" style="background-color: aliceblue;max-width: 30%;">
+                            redo
+                        </div>
                     </div>
 
                 </div>

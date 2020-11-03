@@ -1,28 +1,17 @@
-/* eslint-disable no-undef */
-/* eslint-disable no-param-reassign */
 /* eslint-disable camelcase */
-/* eslint-disable no-restricted-globals */
-/* eslint-disable no-use-before-define */
-/* eslint-disable no-console */
-/* eslint-disable max-len */
-// eslint-disable-next-line no-use-before-define
-
-import { whellEvent } from "./wheelzoom.js"
-
 window.addEventListener('load', onload);
 
 function onload() {
 
   const aspectRatio_16_9 = 1.77778;
   const aspectRatio_4_3 = 1.33334;
-  let currentRatio = aspectRatio_16_9;
 
   const canvasDiv = document.getElementById('canvasDiv');
   const inputVideo = document.getElementById('inputVideo');
-  const testImage = document.getElementById('testimg')
-
+  // const testImage = document.getElementById('testimg');
   const mainDiv = document.getElementById('main');
   const canvasPaint = document.getElementById('canvasPaint');
+
   const zoomInBtn = document.getElementById('ZoomIn');
   const zoomOutBtn = document.getElementById('ZoomOut');
   const mouseActionChange = document.getElementById('MoveOrDraw');
@@ -33,31 +22,46 @@ function onload() {
   const recoderPaintCheck = document.getElementById('recoderCheck');
   const recorderDot = document.getElementById('recorderDot');
   const clearCanvas = document.getElementById('clearCanvas');
+  const colorPicker = document.getElementById('colorPicker');
+  const lineSize = document.getElementById('lineWidth');
+  const drawStates = document.getElementById('drawStates');
+  const undoBtn = document.getElementById('undo');
+  const redoBtn = document.getElementById('redo');
+
+  const drawCtx = canvasPaint.getContext('2d');
+  const drawScreen = new screenInfo();
+
+  let drawMode = 'brush';
+  let currentRatio = aspectRatio_16_9;
   let zoomRatio = 1.0;
   let zoomCounter = 0;
   let reszieTimeOutEvent = null;
 
-  var myWheel = new whellEvent(canvasDiv, inputVideo)
-
-  myWheel.containerElement.onwheel = function (e) {
-    myWheel.mouseWheel(e)
-  }
-
   window.addEventListener('resize', () => {
+    // eslint-disable-next-line no-use-before-define
     setDisplaySize(currentRatio);
-    myWheel.reset();
+    // eslint-disable-next-line no-use-before-define
+    onResizeEnd();
+  });
+
+  getUserMedia().catch(err => { 
+    console.log(err) 
+  });
+
+  function onResizeEnd() {
 
     if (reszieTimeOutEvent) clearTimeout(reszieTimeOutEvent);
 
     reszieTimeOutEvent = setTimeout(() => {
-      registerMouseEvent();
       console.log('resizeEnd');
-    }, 1500);
+    }, 1000);
 
-  });
+  }
 
-  getUserMedia().catch((err) => { console.log(err); });
-
+  /**
+   * set container display size
+   * set canvas display size
+   */
   function setDisplaySize(aspectRatio) {
     const main = mainDiv;
     const canvasParentWidth = main.getBoundingClientRect().width;
@@ -88,9 +92,75 @@ function onload() {
     // console.log('----------------------------------')
   }
 
+  function setBrushStyle() {
+    drawCtx.strokeStyle = colorPicker.value;
+    drawCtx.lineWidth = lineSize.value;
+    drawCtx.lineJoin = 'round';
+    drawCtx.lineCap = 'round';
+  }
+
   /**
-     * get video device
-     */
+   * manage canvas screen action
+   */
+  function screenInfo() {
+    drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
+    this.canvasStack = [];
+    this.step = -1;
+
+    this.init = () => {
+      drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
+      this.canvasStack = [];
+      this.step = -1;
+      this.pushScreen();
+    };
+
+    this.setlineWidth = (lineWidth) => {
+      drawCtx.lineWidth = lineWidth;
+    };
+
+    this.setColorHex = (colorHex) => {
+      drawCtx.strokeStyle = colorHex;
+    };
+    // convert canvas to dataUrl save to array
+    this.pushScreen = () => {
+      console.log(this.step)
+      this.step++;
+      if (this.step < this.canvasStack.length) {
+        this.canvasStack.length = this.step;
+      }
+      this.canvasStack.push(canvasPaint.toDataURL('image/png'))
+      console.log(this.step)
+      console.log(this.canvasStack)
+    };
+    this.pushScreen();
+
+    this.drawScreen = (dataUrl) => {
+      const img = new Image();
+      img.addEventListener("load", function () {
+        drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
+        drawCtx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvasPaint.width, canvasPaint.height)
+      }, false);
+      img.src = dataUrl;
+    };
+
+    this.undoScreen = () => {
+      if (this.step > 0) {
+        this.step--;
+        this.drawScreen(this.canvasStack[this.step])
+      }
+    };
+
+    this.redoScreeb = () => {
+      if (this.step < this.canvasStack.length - 1) {
+        this.step++
+        this.drawScreen(this.canvasStack[this.step])
+      }
+    };
+  }
+
+  /**
+    * get video device
+    */
   async function getDeviceList() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = [];
@@ -120,16 +190,16 @@ function onload() {
     // custom device okiocam parms
     const setOkiocamConstraints = (id) => {
       constraints.video.deviceId = id;
-      constraints.video.width = { min: 1280, ideal: 1920, max: 1920 };
-      constraints.video.height = { min: 720, ideal: 1080, max: 1080 };
+      constraints.video.width = { min: 800, ideal: 1280, max: 1920 };
+      constraints.video.height = { min: 600, ideal: 720, max: 1080 };
       constraints.video.frameRate = { min: 24, ideal: 30, max: 30 };
     };
 
     // other deicve webcam parms
     const setOthercamConstraints = (id) => {
       constraints.video.deviceId = id;
-      constraints.video.width = { min: 640, ideal: 1920, max: 1920 };
-      constraints.video.height = { min: 360, ideal: 1080, max: 1080 };
+      constraints.video.width = { min: 640, ideal: 800, max: 1920 };
+      constraints.video.height = { min: 360, ideal: 600, max: 1080 };
       constraints.video.frameRate = { ideal: 30, max: 30 };
       constraints.video.aspectRatio = 1.777777778;
     };
@@ -170,10 +240,14 @@ function onload() {
 
     if (videoStreamRatio === '1.77778') { currentRatio = aspectRatio_16_9; }
 
-    setDisplaySize(currentRatio);
     handleStream(inputVideo, videoStream);
     mergeStream(videoStream);
-    registerMouseEvent();
+    setDisplaySize(currentRatio);
+    setBrushStyle();
+    subscribeMouseEvent();
+    drawScreen.init();
+
+    return true;
   }
 
   /**
@@ -222,7 +296,7 @@ function onload() {
       mixer.startDrawingFrames();
 
       const mixStream = mixer.getMixedStream();
-      // handleRecorder(mixStream);
+      handleRecorder(mixStream);
     } else {
       handleRecorder(mediaStream);
     }
@@ -247,6 +321,11 @@ function onload() {
 
       console.log(totalVideo);
 
+      let link = document.createElement("a")
+      link.href = URL.createObjectURL(totalVideo)
+      link.setAttribute("download", "")
+      link.click()
+
       console.log(URL.createObjectURL(totalVideo));
 
       chunks = [];
@@ -265,15 +344,11 @@ function onload() {
     };
   }
 
-  function registerMouseEvent() {
+  /**
+   * subscribe mouse Event
+   */
+  function subscribeMouseEvent() {
     resetTopLeftScale();
-
-    const drawCtx = canvasPaint.getContext('2d');
-    drawCtx.strokeStyle = 'red';
-    drawCtx.lineWidth = 6;
-    drawCtx.lineJoin = 'round';
-    drawCtx.lineCap = 'round';
-
     // When true, moving the mouse draws on the canvas or drag video and canvas
     let isDrawing = false;
     let isDraging = false;
@@ -286,7 +361,7 @@ function onload() {
 
     function mouseDown(e) {
       e.stopPropagation();
-
+      console.log(drawCtx.strokeStyle)
       // move video and canvas
       if (mouseActionChange.dataset.moveevent === '0' && zoomRatio > 1.0) {
 
@@ -319,7 +394,6 @@ function onload() {
         AstartX = e.offsetX;
         AstartY = e.offsetY;
       }
-
       if (isDraging === true) {
         offsetX = e.offsetX - AstartX;
         offsetY = e.offsetY - AstartY;
@@ -352,8 +426,8 @@ function onload() {
         AstartY = 0;
         isDrawing = false;
         isDraging = false;
+        drawScreen.pushScreen();
       }
-
       if (isDraging === true) {
         AstartX = 0;
         AstartY = 0;
@@ -362,6 +436,7 @@ function onload() {
         isDrawing = false;
         isDraging = false;
       }
+      canvasDiv.style.cursor = '';
     }
 
     function mouseOut(e) {
@@ -379,9 +454,7 @@ function onload() {
       canvasDiv.style.cursor = '';
     }
 
-    // eslint-disable-next-line padded-blocks
     function drawCanvasLine(drawLineCtx, x1, y1, x2, y2) {
-
       const canvasPoint = {
         X1: x1,
         X2: x2,
@@ -398,22 +471,32 @@ function onload() {
       canvasPoint.Y1 *= ratio;
       canvasPoint.Y2 *= ratio;
 
-      drawLineCtx.beginPath();
-      drawLineCtx.moveTo(canvasPoint.X1, canvasPoint.Y1);
-      drawLineCtx.lineTo(canvasPoint.X2, canvasPoint.Y2);
-      drawLineCtx.stroke();
-      drawLineCtx.closePath();
+      if (drawMode === 'brush') {
+        drawLineCtx.beginPath();
+        drawLineCtx.moveTo(canvasPoint.X1, canvasPoint.Y1);
+        drawLineCtx.lineTo(canvasPoint.X2, canvasPoint.Y2);
+        drawLineCtx.stroke();
+        drawLineCtx.closePath();
+      }
+
+      if (drawMode === 'eraser') {
+        drawLineCtx.save();
+        drawLineCtx.beginPath();
+        drawLineCtx.arc(canvasPoint.X1, canvasPoint.Y1, drawLineCtx.lineWidth * 1.5, 0, Math.PI * 2, false);
+        drawLineCtx.arc(canvasPoint.X2, canvasPoint.Y2, drawLineCtx.lineWidth * 1.5, 0, Math.PI * 2, false);
+        drawLineCtx.clip();
+        drawLineCtx.clearRect(0, 0, drawLineCtx.canvas.width, drawLineCtx.canvas.height)
+        drawLineCtx.restore();
+        // drawLineCtx.clearRect(canvasPoint.X1 - lineWidth, canvasPoint.Y1 - lineWidth, 20 * 1.5, 20 * 1.5)
+        // drawLineCtx.clearRect(canvasPoint.X2 - lineWidth, canvasPoint.Y2 - lineWidth, 20 * 1.5, 20 * 1.5)
+      }
     }
 
-    // eslint-disable-next-line no-shadow
     function moveVideoAndCanvas(offsetX, offsetY) {
       inputVideo.style.left = `${offsetX}px`;
       inputVideo.style.top = `${offsetY}px`;
       canvasPaint.style.left = `${offsetX}px`;
       canvasPaint.style.top = `${offsetY}px`;
-
-      // testImage.style.left = `${offsetX}px`;
-      // testImage.style.top = `${offsetY}px`;
     }
 
     canvasDiv.onmousedown = null;
@@ -421,10 +504,10 @@ function onload() {
     canvasDiv.onmouseup = null;
     canvasDiv.onmouseout = null;
 
-    canvasDiv.onmousedown = mouseDown;
-    canvasDiv.onmousemove = mouseMove;
-    canvasDiv.onmouseup = mouseUp;
-    canvasDiv.onmouseout = mouseOut;
+    canvasDiv.onmousedown = (e) => { mouseDown(e) };
+    canvasDiv.onmousemove = (e) => { mouseMove(e) };
+    canvasDiv.onmouseup = (e) => { mouseUp(e) };
+    canvasDiv.onmouseout = (e) => { mouseOut(e) };
 
     clearCanvas.onclick = () => {
       drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
@@ -433,7 +516,6 @@ function onload() {
 
   /**
     * zoom in and out action set inputvideo and canvasPaint element top left scale
-    *
     */
   function zoomSetTopLeftScale(left, top) {
     inputVideo.style.left = `${left}px`;
@@ -442,10 +524,6 @@ function onload() {
     canvasPaint.style.top = `${top}px`;
     inputVideo.style.transform = `scale(${zoomRatio})`;
     canvasPaint.style.transform = `scale(${zoomRatio})`;
-
-    // testImage.style.left = `${left}px`;
-    // testImage.style.top = `${top}px`;
-    // testImage.style.transform = `scale(${zoomRatio})`;
   }
 
   /**
@@ -460,11 +538,6 @@ function onload() {
     canvasPaint.style.left = `${0}px`;
     inputVideo.style.transform = `scale(${zoomRatio})`;
     canvasPaint.style.transform = `scale(${zoomRatio})`;
-
-    // testImage.style.left = `${0}px`;
-    // testImage.style.top = `${0}px`;
-    // testImage.style.transform = `scale(${zoomRatio})`;
-
   }
 
   function zoomIn() {
@@ -481,7 +554,9 @@ function onload() {
       zoomCounter += 1;
     }
   }
-  zoomInBtn.onclick = () => { myWheel.zoom('In') };
+  zoomInBtn.onclick = () => {
+    zoomIn();
+  };
 
   function zoomOut() {
     if (zoomRatio > 1.0) {
@@ -499,26 +574,57 @@ function onload() {
       if (zoomRatio === 1) { resetTopLeftScale(); }
     }
   }
-  zoomOutBtn.onclick = () => { myWheel.zoom('Out') };
+  zoomOutBtn.onclick = () => {
+    zoomOut();
+  };
 
   mouseActionChange.onclick = () => {
     if (mouseActionChange.dataset.moveevent === '1') {
+      // move
+      // myMouseAction.mouseHoldLeftButton = 'isDrawing'
       mouseActionChange.innerHTML = 'DrawType';
       mouseActionChange.dataset.moveevent = '0';
     } else {
+      // draw
+      // myMouseAction.mouseHoldLeftButton = 'isDraging'
       mouseActionChange.innerHTML = 'MoveType';
       mouseActionChange.dataset.moveevent = '1';
     }
   };
 
   function changeCamera() {
-    getUserMedia(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text).catch((err) => { console.log(err); });
+    const id = this.options[this.selectedIndex].value;
+    const name = this.options[this.selectedIndex].text;
+    // eslint-disable-next-line no-console
+    getUserMedia(id, name).catch((err) => { console.log(err); });
   }
-
   selectCamera_1.onchange = changeCamera;
 
   recoderPaintCheck.onchange = () => {
     mergeStream(inputVideo.srcObject);
   };
 
+  colorPicker.oninput = () => {
+    setBrushStyle();
+  };
+
+  lineSize.oninput = () => {
+    setBrushStyle();
+  };
+
+  drawStates.onclick = () => {
+    if (drawStates.checked) {
+      drawMode = 'eraser';
+    } else {
+      drawMode = 'brush';
+    }
+  };
+
+  undoBtn.onclick = () => {
+    drawScreen.undoScreen();
+  };
+
+  redoBtn.onclick = () => {
+    drawScreen.redoScreeb();
+  };
 }

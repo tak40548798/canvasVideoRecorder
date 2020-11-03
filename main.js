@@ -1,4 +1,3 @@
-/* eslint-disable */
 
 const { app, BrowserWindow } = require('electron')
 
@@ -8,17 +7,13 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      nodeIntegration: false
+      nodeIntegration: true
     }
   })
 
-  win.loadURL('chrome://gpu')
+  win.loadFile('index.html')
   win.webContents.openDevTools()
-  // win.webContents.setFrameRate(30)
 }
-
-app.disableHardwareAcceleration()
-
 
 app.whenReady().then(createWindow)
 
