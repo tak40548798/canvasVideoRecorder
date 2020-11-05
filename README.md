@@ -12,7 +12,8 @@
 
 ### 影片
 
-<iframe src="https://drive.google.com/file/d/1uZPHXPNT_XMK8NigbHXdPFiJaXq_1hoN/preview" width="640" height="480"></iframe>
+https://drive.google.com/file/d/1uZPHXPNT_XMK8NigbHXdPFiJaXq_1hoN/preview
+<!-- <iframe src="https://drive.google.com/file/d/1uZPHXPNT_XMK8NigbHXdPFiJaXq_1hoN/preview" width="640" height="480"></iframe> -->
 
 ### 問題紀錄
 
