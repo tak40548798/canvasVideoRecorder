@@ -32,7 +32,8 @@ ctx.stroke();
 ctx.closePath();
 ```
 
-<video autoplay="autoplay" loop=ture width=768 src="https://i.imgur.com/vlnPR34.mp4"/></video>
+![](https://github.com/tak40548798/canvasVideoRecorder/blob/ESlintAndMouseWheelVersion/readmeGIF/GIF1.gif?raw=true)
+<!-- <video autoplay="autoplay" loop=ture width=768 src="https://i.imgur.com/vlnPR34.mp4"/></video> -->
 
 ##### 解決方式
 
@@ -48,7 +49,8 @@ ctx.closePath();
 
 而文中的方法是每次 event 觸發繪製時都會清除畫布，這樣效率其實不太好，尤其畫布的大小如果太大時
 
-<video autoplay="autoplay" loop=ture width=768 src="https://i.imgur.com/OOYywtx.mp4"/></video>
+![](https://github.com/tak40548798/canvasVideoRecorder/blob/ESlintAndMouseWheelVersion/readmeGIF/GIF2.gif?raw=true)
+<!-- <video autoplay="autoplay" loop=ture width=768 src="https://i.imgur.com/OOYywtx.mp4"/></video> -->
 
 具體的解決方法，每次 mousemove 一樣把座標存到 array
 
@@ -78,4 +80,6 @@ function onMouseMove(e) {
 
 因為並不是所有的點從頭到尾做二次曲線
 
-<video autoplay="autoplay" loop=ture width=768 src="https://i.imgur.com/iVp242f.mp4"/></video>
+![](https://github.com/tak40548798/canvasVideoRecorder/blob/ESlintAndMouseWheelVersion/readmeGIF/GIF3.gif?raw=true)
+
+<!-- <video autoplay="autoplay" loop=ture width=768 src="https://i.imgur.com/iVp242f.mp4"/></video> -->
