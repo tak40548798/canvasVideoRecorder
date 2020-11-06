@@ -3,11 +3,13 @@ window.addEventListener('load', onload);
 function onload() {
   const aspectRatio_16_9 = 1.77778;
   const aspectRatio_4_3 = 1.33334;
+
   const canvasDiv = document.getElementById('canvasDiv');
   const inputVideo = document.getElementById('inputVideo');
   // const testImage = document.getElementById('testimg');
   const mainDiv = document.getElementById('main');
   const canvasPaint = document.getElementById('canvasPaint');
+
   const zoomInBtn = document.getElementById('ZoomIn');
   const zoomOutBtn = document.getElementById('ZoomOut');
   const mouseActionChange = document.getElementById('MoveOrDraw');
@@ -43,8 +45,7 @@ function onload() {
   setDisplaySize(currentRatio);
 
   getUserMedia().catch(err => {
-    // location.reload();
-    console.log(err);
+    console.log(err)
   });
 
   function onResizeEnd() {
@@ -55,15 +56,15 @@ function onload() {
   }
 
   /**
-   * set container display size
-   * set canvas display size
-   */
+	 * set container display size
+	 * set canvas display size
+	 */
   function setDisplaySize(aspectRatio) {
     const main = mainDiv;
     const canvasParentWidth = main.getBoundingClientRect().width;
     const canvasParentHeight = main.getBoundingClientRect().height;
-    const ratio = parseFloat((canvasParentWidth / canvasParentHeight).toFixed(5));
-
+		const ratio = parseFloat((canvasParentWidth / canvasParentHeight).toFixed(5));
+		
     if (ratio > aspectRatio) {
       // full height width follow ratio
       canvasDiv.style.height = `${canvasParentHeight}px`;
@@ -96,8 +97,8 @@ function onload() {
   }
 
   /**
-   * manage canvas screen action
-   */
+	 * manage canvas screen action
+	 */
   function screenInfo() {
     drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
     this.canvasStack = [];
@@ -153,8 +154,8 @@ function onload() {
   }
 
   /**
-   * get video device
-   */
+	 * get video device
+	 */
   async function getDeviceList() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = [];
@@ -171,8 +172,8 @@ function onload() {
   }
 
   /**
-   * get video device display camera deivice
-   */
+	 * get video device display camera deivice
+	 */
   async function getUserMedia(deviceId, deiveName) {
     const constraints = {
       audio: false,
@@ -184,17 +185,17 @@ function onload() {
     // custom device okiocam parms
     const setOkiocamConstraints = (id) => {
       constraints.video.deviceId = id;
-      constraints.video.width = {min: 800, ideal: 1280, max: 1920};
-      constraints.video.height = {min: 600, ideal: 720, max: 1080};
-      constraints.video.frameRate = {min: 24, ideal: 24, max: 30};
+      constraints.video.width = { min: 800, ideal: 1280, max: 1920 };
+      constraints.video.height = { min: 600, ideal: 720, max: 1080 };
+      constraints.video.frameRate = { min: 24, ideal: 24, max: 30 };
     };
 
     // other deicve webcam parms
     const setOthercamConstraints = (id) => {
       constraints.video.deviceId = id;
-      constraints.video.width = {min: 640, ideal: 800, max: 1920};
-      constraints.video.height = {min: 360, ideal: 600, max: 1080};
-      constraints.video.frameRate = {ideal: 30, max: 30};
+      constraints.video.width = { min: 640, ideal: 800, max: 1920 };
+      constraints.video.height = { min: 360, ideal: 600, max: 1080 };
+      constraints.video.frameRate = { ideal: 30, max: 30 };
       constraints.video.aspectRatio = 1.777777778;
     };
 
@@ -247,7 +248,6 @@ function onload() {
     handleStream(inputVideo, videoStream);
     mergeStream(videoStream);
     setBrushStyle();
-    setDisplaySize(currentRatio);
     subscribeMouseEvent();
     drawScreen.init();
 
@@ -255,8 +255,8 @@ function onload() {
   }
 
   /**
-   * display video stream in video element
-   */
+	 * display video stream in video element
+	 */
   function handleStream(inputElement, mediaStream) {
     if (inputElement.srcObject) {
       const stream = inputElement.srcObject;
@@ -274,9 +274,9 @@ function onload() {
   }
 
   /**
-   * if recorder canvas checked is true
-   * mix canavs stream and video stream
-   */
+	 * if recorder canvas checked is true
+	 * mix canavs stream and video stream
+	 */
   function mergeStream(mediaStream) {
     if (recoderPaintCheck.checked) {
       const canvasStream = canvasPaint.captureStream(30);
@@ -296,7 +296,7 @@ function onload() {
 
       // eslint-disable-next-line no-undef
       const mixer = new MultiStreamsMixer([mediaStream, canvasStream]);
-      mixer.frameInterval = 1000 / 30;
+      mixer.frameInterval = 30;
       mixer.startDrawingFrames();
 
       const mixStream = mixer.getMixedStream();
@@ -308,10 +308,10 @@ function onload() {
 
   function handleRecorder(mediaStream) {
     let chunks = [];
-    const canvasRecorder = new MediaRecorder(mediaStream, {mimeType: 'video/webm;codecs=VP8'});
+    const canvasRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm;codecs=VP8' });
 
     canvasRecorder.ondataavailable = (e) => {
-      const blob = new Blob([e.data], {type: 'video/webm'});
+      const blob = new Blob([e.data], { type: 'video/webm' });
 
       chunks.push(blob);
     };
@@ -321,7 +321,7 @@ function onload() {
       recorderDot.classList.remove('dot');
       recoderPaintCheck.disabled = false;
 
-      const totalVideo = new Blob(chunks, {type: 'video/webm'});
+      const totalVideo = new Blob(chunks, { type: 'video/webm' });
 
       console.log(totalVideo);
 
@@ -349,8 +349,8 @@ function onload() {
   }
 
   /**
-   * subscribe mouse Event
-   */
+	 * subscribe mouse Event
+	 */
   function subscribeMouseEvent() {
     resetTopLeftScale();
     // When true, moving the mouse draws on the canvas or drag video and canvas
@@ -364,26 +364,24 @@ function onload() {
     let maxLeft = 0;
     let maxTop = 0;
     let prev = 0;
-    let drawGap = 4;// 繪製的 mosue move 座標間隔
 
     function mouseDown(e) {
       e.stopPropagation();
       // move video and canvas
       if (mouseActionChange.dataset.moveevent === '0' && zoomRatio > 1.0) {
-        maxLeft = ((canvasDiv.getBoundingClientRect().width * zoomRatio) - canvasDiv.getBoundingClientRect().width) / 2;
+				maxLeft = ((canvasDiv.getBoundingClientRect().width * zoomRatio) - canvasDiv.getBoundingClientRect().width) / 2;
         maxTop = ((canvasDiv.getBoundingClientRect().height * zoomRatio) - canvasDiv.getBoundingClientRect().height) / 2;
         AstartX = e.offsetX;
         AstartY = e.offsetY;
         isDraging = true;
-
       }
       // draw canvas to video
       if (mouseActionChange.dataset.moveevent === '1') {
-        let ratio = getRatio();
+				let ratio = getRatio();
         AstartX = e.offsetX;
         AstartY = e.offsetY;
         isDrawing = true;
-        pointStack.push({x: AstartX * ratio, y: AstartY * ratio});
+        pointStack.push({ x: AstartX * ratio, y: AstartY * ratio });
       }
     }
 
@@ -392,8 +390,8 @@ function onload() {
       if (isDrawing === true) {
         drawCanvasLine(drawCtx, AstartX, AstartY, e.offsetX, e.offsetY);
         AstartX = e.offsetX;
-        AstartY = e.offsetY;
-        canvasDiv.style.cursor = 'pointer';
+				AstartY = e.offsetY;
+				canvasDiv.style.cursor = 'pointer';
       }
       if (isDraging === true) {
         offsetX = e.offsetX - AstartX;
@@ -416,8 +414,8 @@ function onload() {
           if (offsetY <= maxTop * -1) {
             offsetY = maxTop * -1;
           }
-        }
-        canvasDiv.style.cursor = 'pointer';
+				}
+				canvasDiv.style.cursor = 'pointer';
         moveVideoAndCanvas(offsetX, offsetY);
       }
     }
@@ -430,21 +428,9 @@ function onload() {
         AstartY = 0;
         isDrawing = false;
         isDraging = false;
-
-        // 繪製剩下的points
-        if(prev !== pointStack.length &&　pointStack.length > prev){
-          drawPoints(pointStack.slice(prev, pointStack.length), drawCtx);
-        }
-
-        // drawCtx.lineWidth = 3;
-        // drawCtx.strokeStyle = 'black';
-        // drawScreen.pushScreen();
-        // drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
-        // drawPoints(pointStack,drawCtx);
-        // drawScreen.drawScreen(drawScreen.canvasStack[drawScreen.step])
-        drawScreen.pushScreen();
-        pointStack = [];
         prev = 0;
+        pointStack = [];
+        drawScreen.pushScreen();
       }
       if (isDraging === true) {
         AstartX = 0;
@@ -471,13 +457,6 @@ function onload() {
     }
 
     function drawPoints(points, ctx) {
-      // draw a basic circle instead
-      if (points.length < drawGap) {
-        var b = points[0];
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, ctx.lineWidth / 2, 0, Math.PI * 2, !0), ctx.closePath();
-        return
-      }
       ctx.beginPath();
       ctx.moveTo(points[0].x, points[0].y);
       // draw a bunch of quadratics, using the average of two points as the control point
@@ -497,7 +476,7 @@ function onload() {
         X2: x2,
         Y1: y1,
         Y2: y2,
-      };
+			};
       const ratio = getRatio();
       canvasPoint.X1 *= ratio;
       canvasPoint.X2 *= ratio;
@@ -506,34 +485,28 @@ function onload() {
 
       if (drawMode === 'brush') {
 
-        // draw normal line
-        // drawLineCtx.lineWidth = 6;
-        // drawLineCtx.strokeStyle = 'black';
+				// draw normal line
         // drawLineCtx.beginPath();
         // drawLineCtx.moveTo(canvasPoint.X1, canvasPoint.Y1);
         // drawLineCtx.lineTo(canvasPoint.X2, canvasPoint.Y2);
         // drawLineCtx.stroke();
         // drawLineCtx.closePath();
 
-        pointStack.push({x: canvasPoint.X2, y: canvasPoint.Y2});
+        pointStack.push({ x: canvasPoint.X2, y: canvasPoint.Y2 });
+
         let drawSmoothLine = () => {
-          if (pointStack.length % drawGap === 0) {
-            // drawLineCtx.lineWidth = 6;
-            // drawLineCtx.strokeStyle = 'white';
+          if (pointStack.length % 5 === 0) {
             let currentEnd = pointStack.length;
             let currentStart = prev;
-            if (prev !== 0) {
-              currentStart -= 1;
-            }
+            if (prev !== 0) { currentStart -= 1; };
             // smooth line
             drawPoints(pointStack.slice(currentStart, currentEnd), drawLineCtx);
-            // 會從上一個線段的倒數第2個點開始接續 drawGap-1
-            // 會從上一個線段的倒數第1個點開始接續 drawGap
-            prev += drawGap;
+            prev += 5;
           }
         }
         drawSmoothLine();
       }
+
       if (drawMode === 'eraser') {
         drawLineCtx.save();
         drawLineCtx.beginPath();
@@ -585,8 +558,8 @@ function onload() {
   }
 
   /**
-   * zoom in and out action set inputvideo and canvasPaint element top left scale
-   */
+	 * zoom in and out action set inputvideo and canvasPaint element top left scale
+	 */
   function zoomSetTopLeftScale(left, top) {
     inputVideo.style.left = `${left}px`;
     inputVideo.style.top = `${top}px`;
@@ -597,8 +570,8 @@ function onload() {
   }
 
   /**
-   * reset inputvideo and canvasPaint element top left scale
-   */
+	 * reset inputvideo and canvasPaint element top left scale
+	 */
   function resetTopLeftScale() {
     zoomRatio = 1.0;
     zoomCounter = 0;
@@ -681,11 +654,11 @@ function onload() {
     mergeStream(inputVideo.srcObject);
   };
 
-  colorPicker.onchange = () => {
+  colorPicker.oninput = () => {
     setBrushStyle();
   };
 
-  lineSize.onchange = () => {
+  lineSize.oninput = () => {
     setBrushStyle();
   };
 
@@ -704,21 +677,6 @@ function onload() {
   redoBtn.onclick = () => {
     drawScreen.redoScreeb();
   };
-
-  $('#colorPicker').spectrum({
-    type: "color",
-    showPalette: "false",
-    showPaletteOnly: "true",
-    togglePaletteOnly: "true",
-    hideAfterPaletteSelect: "true",
-    showInput: "true",
-    color: "#2894FF",
-    // palette: [
-    //     ["red", "Blue", "Yellow"],
-    //     ["black", "green", "gray","pink"]
-    // ]
-  });
-
 }
 
 /* eslint-disable no-use-before-define */
