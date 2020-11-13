@@ -12,8 +12,7 @@
 
 ### 影片
 
-https://drive.google.com/file/d/1uZPHXPNT_XMK8NigbHXdPFiJaXq_1hoN/preview
-<!-- <iframe src="https://drive.google.com/file/d/1uZPHXPNT_XMK8NigbHXdPFiJaXq_1hoN/preview" width="640" height="480"></iframe> -->
+[![DEMO影片](https://raw.githubusercontent.com/tak40548798/canvasVideoRecorder/master/readmeGIF/videoImage1.jpg)](http://www.youtube.com/watch?v=6LDMxZE6-QI "DEMO影片")
 
 ### 問題紀錄
 

@@ -43,7 +43,6 @@ function onload() {
   setDisplaySize(currentRatio);
 
   getUserMedia().catch(err => {
-    // location.reload();
     console.log(err);
   });
 
@@ -154,7 +153,8 @@ function onload() {
 
   /**
    * get video device
-   */
+   */getDeviceList
+
   async function getDeviceList() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = [];
@@ -184,9 +184,9 @@ function onload() {
     // custom device okiocam parms
     const setOkiocamConstraints = (id) => {
       constraints.video.deviceId = id;
-      constraints.video.width = {min: 800, ideal: 1280, max: 1920};
-      constraints.video.height = {min: 600, ideal: 720, max: 1080};
-      constraints.video.frameRate = {min: 24, ideal: 24, max: 30};
+      constraints.video.width = {min: 800, ideal: 1920, max: 1920};
+      constraints.video.height = {min: 600, ideal: 1080, max: 1080};
+      constraints.video.frameRate = {min: 24, ideal: 30, max: 30};
     };
 
     // other deicve webcam parms
@@ -233,8 +233,8 @@ function onload() {
     const videoStreamHeight = videoStream.getVideoTracks()[0].getSettings().height;
     const videoStreamRatio = videoStream.getVideoTracks()[0].getSettings().aspectRatio.toFixed(5);
 
-    canvasPaint.width = videoStreamWidth;
-    canvasPaint.height = videoStreamHeight;
+    canvasPaint.width = videoStreamWidth / 1.8;
+    canvasPaint.height = videoStreamHeight / 1.8;
 
     if (videoStreamRatio === '1.33333') {
       currentRatio = aspectRatio_4_3;
@@ -245,7 +245,7 @@ function onload() {
     }
 
     handleStream(inputVideo, videoStream);
-    mergeStream(videoStream);
+    mergeStream(inputVideo);
     setBrushStyle();
     setDisplaySize(currentRatio);
     subscribeMouseEvent();
@@ -273,36 +273,107 @@ function onload() {
     };
   }
 
+  function mixerStream(mediaArray) {
+    // sort from index
+    mediaArray.sort((a, b) => {
+      return a.index - b.index;
+    });
+    let mixedCanvas = document.createElement('canvas');
+    let mixedContext = mixedCanvas.getContext('2d');
+    let mixedStream = null;
+
+    mixedCanvas.width = mediaArray[0].fullscreen.width;
+    mixedCanvas.height = mediaArray[0].fullscreen.height;
+
+    function mixerDraw() {
+      for (let i = 0; i < mediaArray.length; i++) {
+        let element = mediaArray[i];
+        let {sx, sy, sw, sh, dx, dy, dw, dh} = element.drawParms;
+        mixedContext.drawImage(element.mediaElement, sx, sy, sw, sh, dx, dy, dw, dh);
+      }
+      requestAnimationFrame(mixerDraw)
+    }
+
+    requestAnimationFrame(mixerDraw);
+
+    mixedStream = mixedCanvas.captureStream(30).clone();
+
+    return mixedStream
+  }
+
   /**
    * if recorder canvas checked is true
    * mix canavs stream and video stream
    */
-  function mergeStream(mediaStream) {
+  function mergeStream(mainVideo) {
     if (recoderPaintCheck.checked) {
-      const canvasStream = canvasPaint.captureStream(30);
-      const recorderWidth = mediaStream.getVideoTracks()[0].getSettings().width;
-      const recorderHeight = mediaStream.getVideoTracks()[0].getSettings().height;
 
-      mediaStream.fullcanvas = true;
-      mediaStream.width = recorderWidth;
-      mediaStream.height = recorderHeight;
-      mediaStream.top = 0;
-      mediaStream.left = 0;
+      const outputWidth = canvasPaint.width;
+      const outputHeight = canvasPaint.height;
+      let mediaArray = []
 
-      canvasStream.width = recorderWidth;
-      canvasStream.height = recorderHeight;
-      canvasStream.top = 0;
-      canvasStream.left = 0;
+      mediaArray.push({
+        type: "main",
+        mediaElement: mainVideo,
+        mediaElementId: mainVideo.id,
+        index: 1,
+        drawParms: {
+          sx: 0,
+          sy: 0,
+          sw: mainVideo.srcObject.getVideoTracks()[0].getSettings().width,
+          sh: mainVideo.srcObject.getVideoTracks()[0].getSettings().height,
+          dx: 0,
+          dy: 0,
+          dw: outputWidth,
+          dh: outputHeight,
+        },
+        fullscreen:{
+          width: outputWidth,
+          height: outputHeight,
+        },
+      })
+      mediaArray.push({
+        type: "child",
+        index: 2,
+        mediaElement: canvasPaint,
+        mediaElementId: canvasPaint.id,
+        drawParms: {
+          sx: 0,
+          sy: 0,
+          sw: canvasPaint.width,
+          sh: canvasPaint.height,
+          dx: 0,
+          dy: 0,
+          dw: outputWidth,
+          dh: outputHeight,
+        },
+      })
 
-      // eslint-disable-next-line no-undef
-      const mixer = new MultiStreamsMixer([mediaStream, canvasStream]);
-      mixer.frameInterval = 1000 / 30;
-      mixer.startDrawingFrames();
+      let mixedStream = mixerStream(mediaArray)
+      handleRecorder(mixedStream);
 
-      const mixStream = mixer.getMixedStream();
-      handleRecorder(mixStream);
+      // const canvasStream = canvasPaint.captureStream(30);
+      // let resultCanvas = document.createElement();
+      // mediaStream.fullcanvas = true;
+      // mediaStream.width = recorderWidth;
+      // mediaStream.height = recorderHeight;
+      // mediaStream.top = 0;
+      // mediaStream.left = 0;
+      //
+      // canvasStream.width = recorderWidth;
+      // canvasStream.height = recorderHeight;
+      // canvasStream.top = 0;
+      // canvasStream.left = 0;
+      //
+      // // eslint-disable-next-line no-undef
+      // const mixer = new MultiStreamsMixer([mediaStream, canvasStream]);
+      // mixer.frameInterval = 1000 / 30;
+      // mixer.startDrawingFrames();
+      //
+      // const mixStream = mixer.getMixedStream();
+      // handleRecorder(mixStream);
     } else {
-      handleRecorder(mediaStream);
+      handleRecorder(mainVideo.srcObject);
     }
   }
 
@@ -375,7 +446,6 @@ function onload() {
         AstartX = e.offsetX;
         AstartY = e.offsetY;
         isDraging = true;
-
       }
       // draw canvas to video
       if (mouseActionChange.dataset.moveevent === '1') {
@@ -432,7 +502,7 @@ function onload() {
         isDraging = false;
 
         // 繪製剩下的points
-        if(prev !== pointStack.length &&　pointStack.length > prev){
+        if (prev !== pointStack.length && pointStack.length > prev) {
           drawPoints(pointStack.slice(prev, pointStack.length), drawCtx);
         }
 
@@ -577,7 +647,6 @@ function onload() {
     canvasDiv.onmouseout = (e) => {
       mouseOut(e);
     };
-
     clearCanvas.onclick = () => {
       drawScreen.init()
       // drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
@@ -678,7 +747,7 @@ function onload() {
   selectCamera_1.onchange = changeCamera;
 
   recoderPaintCheck.onchange = () => {
-    mergeStream(inputVideo.srcObject);
+    mergeStream(inputVideo);
   };
 
   colorPicker.onchange = () => {
