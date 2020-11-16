@@ -101,6 +101,9 @@ function onload() {
     drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
     this.canvasStack = [];
     this.step = -1;
+    this.sourceX = 0;
+    this.sourceY = 0;
+    this.screenArray = [];
 
     this.init = () => {
       drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
@@ -153,8 +156,7 @@ function onload() {
 
   /**
    * get video device
-   */getDeviceList
-
+   */
   async function getDeviceList() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = [];
@@ -185,7 +187,7 @@ function onload() {
     const setOkiocamConstraints = (id) => {
       constraints.video.deviceId = id;
       constraints.video.width = {min: 800, ideal: 1920, max: 1920};
-      constraints.video.height = {min: 600, ideal: 1080, max: 1080};
+      constraints.video.height = {min: 600, ideal: 1080, max: 1544};
       constraints.video.frameRate = {min: 24, ideal: 30, max: 30};
     };
 
@@ -233,8 +235,8 @@ function onload() {
     const videoStreamHeight = videoStream.getVideoTracks()[0].getSettings().height;
     const videoStreamRatio = videoStream.getVideoTracks()[0].getSettings().aspectRatio.toFixed(5);
 
-    canvasPaint.width = videoStreamWidth / 1.8;
-    canvasPaint.height = videoStreamHeight / 1.8;
+    canvasPaint.width = videoStreamWidth / 1.5;
+    canvasPaint.height = videoStreamHeight / 1.5;
 
     if (videoStreamRatio === '1.33333') {
       currentRatio = aspectRatio_4_3;
@@ -273,113 +275,9 @@ function onload() {
     };
   }
 
-  function mixerStream(mediaArray) {
-    // sort from index
-    mediaArray.sort((a, b) => {
-      return a.index - b.index;
-    });
-    let mixedCanvas = document.createElement('canvas');
-    let mixedContext = mixedCanvas.getContext('2d');
-    let mixedStream = null;
-
-    mixedCanvas.width = mediaArray[0].fullscreen.width;
-    mixedCanvas.height = mediaArray[0].fullscreen.height;
-
-    function mixerDraw() {
-      for (let i = 0; i < mediaArray.length; i++) {
-        let element = mediaArray[i];
-        let {sx, sy, sw, sh, dx, dy, dw, dh} = element.drawParms;
-        mixedContext.drawImage(element.mediaElement, sx, sy, sw, sh, dx, dy, dw, dh);
-      }
-      requestAnimationFrame(mixerDraw)
-    }
-
-    requestAnimationFrame(mixerDraw);
-
-    mixedStream = mixedCanvas.captureStream(30).clone();
-
-    return mixedStream
-  }
-
-  /**
-   * if recorder canvas checked is true
-   * mix canavs stream and video stream
-   */
-  function mergeStream(mainVideo) {
-    if (recoderPaintCheck.checked) {
-
-      const outputWidth = canvasPaint.width;
-      const outputHeight = canvasPaint.height;
-      let mediaArray = []
-
-      mediaArray.push({
-        type: "main",
-        mediaElement: mainVideo,
-        mediaElementId: mainVideo.id,
-        index: 1,
-        drawParms: {
-          sx: 0,
-          sy: 0,
-          sw: mainVideo.srcObject.getVideoTracks()[0].getSettings().width,
-          sh: mainVideo.srcObject.getVideoTracks()[0].getSettings().height,
-          dx: 0,
-          dy: 0,
-          dw: outputWidth,
-          dh: outputHeight,
-        },
-        fullscreen:{
-          width: outputWidth,
-          height: outputHeight,
-        },
-      })
-      mediaArray.push({
-        type: "child",
-        index: 2,
-        mediaElement: canvasPaint,
-        mediaElementId: canvasPaint.id,
-        drawParms: {
-          sx: 0,
-          sy: 0,
-          sw: canvasPaint.width,
-          sh: canvasPaint.height,
-          dx: 0,
-          dy: 0,
-          dw: outputWidth,
-          dh: outputHeight,
-        },
-      })
-
-      let mixedStream = mixerStream(mediaArray)
-      handleRecorder(mixedStream);
-
-      // const canvasStream = canvasPaint.captureStream(30);
-      // let resultCanvas = document.createElement();
-      // mediaStream.fullcanvas = true;
-      // mediaStream.width = recorderWidth;
-      // mediaStream.height = recorderHeight;
-      // mediaStream.top = 0;
-      // mediaStream.left = 0;
-      //
-      // canvasStream.width = recorderWidth;
-      // canvasStream.height = recorderHeight;
-      // canvasStream.top = 0;
-      // canvasStream.left = 0;
-      //
-      // // eslint-disable-next-line no-undef
-      // const mixer = new MultiStreamsMixer([mediaStream, canvasStream]);
-      // mixer.frameInterval = 1000 / 30;
-      // mixer.startDrawingFrames();
-      //
-      // const mixStream = mixer.getMixedStream();
-      // handleRecorder(mixStream);
-    } else {
-      handleRecorder(mainVideo.srcObject);
-    }
-  }
-
   function handleRecorder(mediaStream) {
     let chunks = [];
-    const canvasRecorder = new MediaRecorder(mediaStream, {mimeType: 'video/webm;codecs=VP8'});
+    const canvasRecorder = new MediaRecorder(mediaStream, {mimeType: 'video/webm;codecs=VP9'});
 
     canvasRecorder.ondataavailable = (e) => {
       const blob = new Blob([e.data], {type: 'video/webm'});
@@ -419,6 +317,120 @@ function onload() {
     };
   }
 
+  function mixerStream(mediaArray) {
+    // sort from index
+    mediaArray.sort((a, b) => {
+      return a.index - b.index;
+    });
+    let mixedCanvas = document.createElement('canvas');
+    let mixedContext = mixedCanvas.getContext('2d');
+    let mixedStream = null;
+
+    mixedCanvas.width = mediaArray[0].drawParms.dw;
+    mixedCanvas.height = mediaArray[0].drawParms.dh;
+
+    function mixerDraw() {
+      for (let i = 0; i < mediaArray.length; i++) {
+        let element = mediaArray[i];
+        let {sx, sy, sw, sh, dx, dy, dw, dh} = element.drawParms;
+        // console.log({sx, sy, sw, sh, dx, dy, dw, dh})
+        mixedContext.drawImage(element.mediaElement, sx, sy, sw, sh, dx, dy, dw, dh);
+      }
+      requestAnimationFrame(mixerDraw)
+    }
+
+    requestAnimationFrame(mixerDraw);
+
+    mixedStream = mixedCanvas.captureStream(30).clone();
+
+    return mixedStream
+  }
+
+  /**
+   * if recorder canvas checked is true
+   * mix canavs stream and video stream
+   */
+  function mergeStream(mainVideo) {
+    if (recoderPaintCheck.checked) {
+
+      const outputWidth = canvasPaint.width;
+      const outputHeight = canvasPaint.height;
+
+      const sourceWidth = mainVideo.srcObject.getVideoTracks()[0].getSettings().width;
+      const sourceHeight = mainVideo.srcObject.getVideoTracks()[0].getSettings().height;
+
+      let videoRect = {
+        type: "main",
+        mediaElement: mainVideo,
+        mediaElementId: mainVideo.id,
+        index: 1,
+        drawParms: {
+          sx: 0,
+          sy: 0,
+          sw: sourceWidth,
+          sh: sourceHeight,
+          dx: 0,
+          dy: 0,
+          dw: outputWidth,
+          dh: outputHeight,
+        },
+        srcInfo : {
+          srcWidth :sourceWidth,
+          srcHeight :sourceHeight,
+        },
+      }
+      let canvasRect = {
+        type: "child",
+        index: 2,
+        mediaElement: canvasPaint,
+        mediaElementId: canvasPaint.id,
+        drawParms: {
+          sx: 0,
+          sy: 0,
+          sw: canvasPaint.width,
+          sh: canvasPaint.height,
+          dx: 0,
+          dy: 0,
+          dw: outputWidth,
+          dh: outputHeight,
+        },
+        srcInfo : {
+          srcWidth :canvasPaint.width,
+          srcHeight :canvasPaint.height,
+        },
+      }
+
+      drawScreen.screenArray.push(videoRect)
+      drawScreen.screenArray.push(canvasRect)
+
+      let mixedStream = mixerStream(drawScreen.screenArray)
+      handleRecorder(mixedStream);
+
+      // const canvasStream = canvasPaint.captureStream(30);
+      // let resultCanvas = document.createElement();
+      // mediaStream.fullcanvas = true;
+      // mediaStream.width = recorderWidth;
+      // mediaStream.height = recorderHeight;
+      // mediaStream.top = 0;
+      // mediaStream.left = 0;
+      //
+      // canvasStream.width = recorderWidth;
+      // canvasStream.height = recorderHeight;
+      // canvasStream.top = 0;
+      // canvasStream.left = 0;
+      //
+      // // eslint-disable-next-line no-undef
+      // const mixer = new MultiStreamsMixer([mediaStream, canvasStream]);
+      // mixer.frameInterval = 1000 / 30;
+      // mixer.startDrawingFrames();
+      //
+      // const mixStream = mixer.getMixedStream();
+      // handleRecorder(mixStream);
+    } else {
+      handleRecorder(mainVideo.srcObject);
+    }
+  }
+
   /**
    * subscribe mouse Event
    */
@@ -428,8 +440,8 @@ function onload() {
     let pointStack = [];
     let isDrawing = false;
     let isDraging = false;
-    let AstartX = 0;
-    let AstartY = 0;
+    let startX = 0;
+    let startY = 0;
     let offsetX = 0;
     let offsetY = 0;
     let maxLeft = 0;
@@ -443,31 +455,31 @@ function onload() {
       if (mouseActionChange.dataset.moveevent === '0' && zoomRatio > 1.0) {
         maxLeft = ((canvasDiv.getBoundingClientRect().width * zoomRatio) - canvasDiv.getBoundingClientRect().width) / 2;
         maxTop = ((canvasDiv.getBoundingClientRect().height * zoomRatio) - canvasDiv.getBoundingClientRect().height) / 2;
-        AstartX = e.offsetX;
-        AstartY = e.offsetY;
+        startX = e.offsetX;
+        startY = e.offsetY;
         isDraging = true;
       }
       // draw canvas to video
       if (mouseActionChange.dataset.moveevent === '1') {
         let ratio = getRatio();
-        AstartX = e.offsetX;
-        AstartY = e.offsetY;
+        startX = e.offsetX;
+        startY = e.offsetY;
         isDrawing = true;
-        pointStack.push({x: AstartX * ratio, y: AstartY * ratio});
+        pointStack.push({x: startX * ratio, y: startY * ratio});
       }
     }
 
     function mouseMove(e) {
       e.stopPropagation();
       if (isDrawing === true) {
-        drawCanvasLine(drawCtx, AstartX, AstartY, e.offsetX, e.offsetY);
-        AstartX = e.offsetX;
-        AstartY = e.offsetY;
+        drawCanvasLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
+        startX = e.offsetX;
+        startY = e.offsetY;
         canvasDiv.style.cursor = 'pointer';
       }
       if (isDraging === true) {
-        offsetX = e.offsetX - AstartX;
-        offsetY = e.offsetY - AstartY;
+        offsetX = e.offsetX - startX;
+        offsetY = e.offsetY - startY;
         if (inputVideo.style.left) {
           offsetX += parseInt(inputVideo.style.left, 10);
           if (offsetX >= maxLeft) {
@@ -488,16 +500,16 @@ function onload() {
           }
         }
         canvasDiv.style.cursor = 'pointer';
-        moveVideoAndCanvas(offsetX, offsetY);
+        zoomSetTopLeftScale(offsetX, offsetY);
       }
     }
 
     function mouseUp(e) {
       e.stopPropagation();
       if (isDrawing === true) {
-        drawCanvasLine(drawCtx, AstartX, AstartY, e.offsetX, e.offsetY);
-        AstartX = 0;
-        AstartY = 0;
+        drawCanvasLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
+        startX = 0;
+        startY = 0;
         isDrawing = false;
         isDraging = false;
 
@@ -517,8 +529,8 @@ function onload() {
         prev = 0;
       }
       if (isDraging === true) {
-        AstartX = 0;
-        AstartY = 0;
+        startX = 0;
+        startY = 0;
         offsetX = 0;
         offsetY = 0;
         isDrawing = false;
@@ -543,9 +555,10 @@ function onload() {
     function drawPoints(points, ctx) {
       // draw a basic circle instead
       if (points.length < drawGap) {
-        var b = points[0];
+        let b = points[0];
         ctx.beginPath();
-        ctx.arc(b.x, b.y, ctx.lineWidth / 2, 0, Math.PI * 2, !0), ctx.closePath();
+        ctx.arc(b.x, b.y, ctx.lineWidth / 2, 0, Math.PI * 2, !0);
+        ctx.closePath();
         return
       }
       ctx.beginPath();
@@ -553,9 +566,9 @@ function onload() {
       // draw a bunch of quadratics, using the average of two points as the control point
       let i;
       for (i = 1; i < points.length - 2; i++) {
-        var c = (points[i].x + points[i + 1].x) / 2,
+        let c = (points[i].x + points[i + 1].x) / 2,
           d = (points[i].y + points[i + 1].y) / 2;
-        ctx.quadraticCurveTo(points[i].x, points[i].y, c, d)
+        ctx.quadraticCurveTo(points[i].x, points[i].y, c, d);
       }
       ctx.quadraticCurveTo(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);
       ctx.stroke();
@@ -663,6 +676,39 @@ function onload() {
     canvasPaint.style.top = `${top}px`;
     inputVideo.style.transform = `scale(${zoomRatio})`;
     canvasPaint.style.transform = `scale(${zoomRatio})`;
+    zoomTopLeftRecorder();
+  }
+
+  function zoomTopLeftRecorder() {
+
+    let maxLeft = inputVideo.getBoundingClientRect().width - canvasDiv.getBoundingClientRect().width;
+    let leftX = (maxLeft / 2).toFixed(0) - parseFloat(canvasPaint.style.left).toFixed(0)
+
+    let maxTop = inputVideo.getBoundingClientRect().height - canvasDiv.getBoundingClientRect().height;
+    let topY = (maxTop / 2).toFixed(0) - parseFloat(canvasPaint.style.top).toFixed(0)
+
+    if (leftX === 0) {
+      drawScreen.sourceX = leftX;
+    } else {
+      drawScreen.sourceX = leftX / canvasPaint.getBoundingClientRect().width;
+    }
+
+    if (topY === 0) {
+      drawScreen.sourceY = topY;
+    } else {
+      drawScreen.sourceY = topY / canvasPaint.getBoundingClientRect().height;
+    }
+
+    for (let i = 0; i < drawScreen.screenArray.length; i++) {
+      let ele = drawScreen.screenArray[i];
+      ele.drawParms.sx = ele.srcInfo.srcWidth * drawScreen.sourceX;
+      ele.drawParms.sw = ele.srcInfo.srcWidth / zoomRatio;
+
+      ele.drawParms.sy = ele.srcInfo.srcHeight * drawScreen.sourceY;
+      ele.drawParms.sh = ele.srcInfo.srcHeight / zoomRatio;
+    }
+
+    console.log(drawScreen.screenArray)
   }
 
   /**
@@ -708,7 +754,7 @@ function onload() {
       const newTop = ((currentTop * -1) / zoomCounter) + currentTop;
 
       // set inputVideo and canvasPaint offset
-      zoomSetTopLeftScale(newLeft, newTop, zoomRatio);
+      zoomSetTopLeftScale(newLeft, newTop);
       zoomCounter -= 1;
 
       if (zoomRatio === 1) {
@@ -724,12 +770,10 @@ function onload() {
   mouseActionChange.onclick = () => {
     if (mouseActionChange.dataset.moveevent === '1') {
       // move
-      // myMouseAction.mouseHoldLeftButton = 'isDrawing'
       mouseActionChange.innerHTML = 'DrawType';
       mouseActionChange.dataset.moveevent = '0';
     } else {
       // draw
-      // myMouseAction.mouseHoldLeftButton = 'isDraging'
       mouseActionChange.innerHTML = 'MoveType';
       mouseActionChange.dataset.moveevent = '1';
     }
@@ -782,10 +826,6 @@ function onload() {
     hideAfterPaletteSelect: "true",
     showInput: "true",
     color: "#2894FF",
-    // palette: [
-    //     ["red", "Blue", "Yellow"],
-    //     ["black", "green", "gray","pink"]
-    // ]
   });
 
 }
