@@ -1,7 +1,7 @@
+const {app, BrowserWindow} = require('electron')
+var paintWindow = null;
 
-const { app, BrowserWindow } = require('electron')
-
-function createWindow () {
+function createWindow() {
 
   const win = new BrowserWindow({
     width: 800,
@@ -10,6 +10,24 @@ function createWindow () {
       nodeIntegration: true
     }
   })
+
+  paintWindow = new BrowserWindow({
+    width: 400,
+    maxWidth: 400,
+    height: 300,
+    maxHeight: 300,
+    webPreferences: {
+      nodeIntegration: true
+    },
+    frame: false,
+    show: false,
+    fullscreenable: false,
+    maximizable: false,
+    resizable: false,
+    hasShadow: false,
+    thickFrame: false
+  })
+
 
   win.loadFile('index.html')
   win.webContents.openDevTools()
