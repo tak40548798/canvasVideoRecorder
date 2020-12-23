@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
+.idea
+.idea/workspace.xml
+.node_modules
 * text=auto
