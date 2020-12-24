@@ -28,7 +28,6 @@ function createWindow() {
     thickFrame: false
   })
 
-
   win.loadFile('index.html')
   win.webContents.openDevTools()
 }
