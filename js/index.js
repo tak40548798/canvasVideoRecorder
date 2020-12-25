@@ -1,3 +1,5 @@
+const {ipcRenderer} = require('electron')
+
 window.addEventListener('load', onload);
 
 function onload() {
@@ -23,7 +25,7 @@ function onload() {
   const drawStates = document.getElementById('drawStates');
   const undoBtn = document.getElementById('undo');
   const redoBtn = document.getElementById('redo');
-
+  const showControlBtn = document.getElementById('showControl');
   const drawCtx = canvasPaint.getContext('2d');
   const drawScreen = new screenInfo();
 
@@ -42,7 +44,17 @@ function onload() {
 
   setDisplaySize(currentRatio);
 
-  getUserMedia().catch(err => {
+  getUserMedia().then(videoStream => {
+
+    handleStream(inputVideo, videoStream);
+    mergeStream(inputVideo);
+    setBrushStyle();
+    setDisplaySize(currentRatio);
+    subscribeMouseEvent();
+    onPaintWindow();
+    drawScreen.init();
+
+  }).catch(err => {
     console.log(err);
   });
 
@@ -108,6 +120,7 @@ function onload() {
     this.init = () => {
       drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
       this.canvasStack = [];
+      this.screenArray = [];
       this.step = -1;
       this.pushScreen();
     };
@@ -146,12 +159,32 @@ function onload() {
       }
     };
 
-    this.redoScreeb = () => {
+    this.redoScreen = () => {
       if (this.step < this.canvasStack.length - 1) {
         this.step++
         this.drawScreen(this.canvasStack[this.step])
       }
     };
+  }
+
+  /**
+   * manage video screen option
+   */
+  function videoTrackControl(videoStream) {
+    const videoTrack = videoStream.getVideoTracks()[0];
+    const capabilities = videoTrack.getCapabilities();
+    const settings = videoTrack.getSettings();
+
+    const videoConfig = {
+      capabilities: capabilities,
+      settings: settings
+    }
+
+    ipcRenderer.send('videoConfig', videoConfig)
+
+    ipcRenderer.on('applyConstraints', async (event, opts) => {
+      await videoTrack.applyConstraints(opts)
+    })
   }
 
   /**
@@ -185,18 +218,18 @@ function onload() {
 
     // custom device okiocam parms
     const setOkiocamConstraints = (id) => {
-      constraints.video.deviceId = id;
+      constraints.video.deviceId = {exact: id};
       constraints.video.width = {min: 800, ideal: 1920, max: 1920};
       constraints.video.height = {min: 600, ideal: 1080, max: 1544};
-      constraints.video.frameRate = {min: 24, ideal: 30, max: 30};
+      // constraints.video.frameRate = {min: 24, ideal: 30, max: 30};
     };
 
     // other deicve webcam parms
     const setOthercamConstraints = (id) => {
-      constraints.video.deviceId = id;
+      constraints.video.deviceId = {exact: id};
       constraints.video.width = {min: 640, ideal: 800, max: 1920};
       constraints.video.height = {min: 360, ideal: 600, max: 1080};
-      constraints.video.frameRate = {ideal: 30, max: 30};
+      // constraints.video.frameRate = {ideal: 30, max: 30};
       constraints.video.aspectRatio = 1.777777778;
     };
 
@@ -205,7 +238,6 @@ function onload() {
       if (deiveName.split(' ')[0] === 'OKIOCAM' && deviceId) {
         setOkiocamConstraints(deviceId);
       }
-
       if (deiveName.split(' ')[0] !== 'OKIOCAM' && deviceId) {
         setOthercamConstraints(deviceId);
       }
@@ -224,12 +256,16 @@ function onload() {
       }
     }
 
+    console.log(constraints)
+
     const videoStream = await navigator.mediaDevices.getUserMedia(constraints);
 
     // frist access camera is reload
     if (devices.length && devices[0].label === '') {
       location.reload();
     }
+
+    console.log(videoStream.getVideoTracks()[0].getCapabilities())
 
     const videoStreamWidth = videoStream.getVideoTracks()[0].getSettings().width;
     const videoStreamHeight = videoStream.getVideoTracks()[0].getSettings().height;
@@ -246,14 +282,8 @@ function onload() {
       currentRatio = aspectRatio_16_9;
     }
 
-    handleStream(inputVideo, videoStream);
-    mergeStream(inputVideo);
-    setBrushStyle();
-    setDisplaySize(currentRatio);
-    subscribeMouseEvent();
-    drawScreen.init();
-
-    return true;
+    videoTrackControl(videoStream);
+    return videoStream;
   }
 
   /**
@@ -374,9 +404,9 @@ function onload() {
           dw: outputWidth,
           dh: outputHeight,
         },
-        srcInfo : {
-          srcWidth :sourceWidth,
-          srcHeight :sourceHeight,
+        srcInfo: {
+          srcWidth: sourceWidth,
+          srcHeight: sourceHeight,
         },
       }
       let canvasRect = {
@@ -394,14 +424,16 @@ function onload() {
           dw: outputWidth,
           dh: outputHeight,
         },
-        srcInfo : {
-          srcWidth :canvasPaint.width,
-          srcHeight :canvasPaint.height,
+        srcInfo: {
+          srcWidth: canvasPaint.width,
+          srcHeight: canvasPaint.height,
         },
       }
 
       drawScreen.screenArray.push(videoRect)
       drawScreen.screenArray.push(canvasRect)
+
+      console.log(drawScreen.screenArray)
 
       let mixedStream = mixerStream(drawScreen.screenArray)
       handleRecorder(mixedStream);
@@ -725,6 +757,40 @@ function onload() {
     canvasPaint.style.transform = `scale(${zoomRatio})`;
   }
 
+  function onPaintWindow() {
+    ipcRenderer.on("clear", (event, args) => {
+      console.log("clear")
+      drawScreen.init();
+    })
+    ipcRenderer.on("undo", () => {
+      console.log("undo")
+      drawScreen.undoScreen();
+    })
+    ipcRenderer.on("redo", () => {
+      console.log("redo")
+      drawScreen.redoScreen();
+    })
+    ipcRenderer.on("color", (event, colorhex) => {
+      colorPicker.value = colorhex;
+      setBrushStyle();
+    })
+    ipcRenderer.on("linesize", (event, linesize) => {
+      lineSize.value = linesize;
+      setBrushStyle();
+    })
+    ipcRenderer.on("eraser", (event, eraser) => {
+      if (eraser) {
+        drawStates.checked = true;
+        drawMode = 'eraser';
+      } else {
+        drawStates.checked = false;
+        drawMode = 'brush';
+      }
+    })
+    console.log(inputVideo.srcObject.getVideoTracks()[0].getCapabilities())
+
+  }
+
   function zoomIn() {
     if (zoomRatio < 2.5) {
       zoomRatio += 0.1;
@@ -783,9 +849,21 @@ function onload() {
     const id = this.options[this.selectedIndex].value;
     const name = this.options[this.selectedIndex].text;
     // eslint-disable-next-line no-console
-    getUserMedia(id, name).catch((err) => {
+
+    getUserMedia(id, name).then(videoStream => {
+
+      handleStream(inputVideo, videoStream);
+      mergeStream(inputVideo);
+      setBrushStyle();
+      setDisplaySize(currentRatio);
+      subscribeMouseEvent();
+      onPaintWindow();
+      drawScreen.init();
+
+    }).catch(err => {
       console.log(err);
     });
+
   }
 
   selectCamera_1.onchange = changeCamera;
@@ -815,8 +893,18 @@ function onload() {
   };
 
   redoBtn.onclick = () => {
-    drawScreen.redoScreeb();
+    drawScreen.redoScreen();
   };
+
+  showControlBtn.onclick = () => {
+    if (showControlBtn.dataset.switch === '1') {
+      showControlBtn.dataset.switch = '0';
+      ipcRenderer.send('paintWindowControl', showControlBtn.dataset.switch)
+    } else {
+      showControlBtn.dataset.switch = '1';
+      ipcRenderer.send('paintWindowControl', showControlBtn.dataset.switch)
+    }
+  }
 
   $('#colorPicker').spectrum({
     type: "color",

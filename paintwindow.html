@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta content="width=device-width, initial-scale=1.0" name="viewport">
+	<title>control window</title>
+</head>
+<body style="margin: 0px;font-family:Microsoft JhengHei;">
+<div style="display: flex;justify-content: space-around;align-items:center;margin: 10px">
+	<button id="clear">clearCanvas</button>
+	<button id="undo">undo</button>
+	<button id="redo">redo</button>
+	<input id="color" type="color">
+	<input id="linesize" type="number" value="5" step="5" max="50" min="5">
+	<input id="eraser" type="checkbox">
+	<span>eraser</span>
+</div>
+<div id="controlDiv" style="display: block;margin: 10px">
+
+</div>
+</body>
+</html>
+<style>
+    .controlBar {
+        display: grid;
+        grid-template-columns: 40% 40% auto;
+    }
+</style>
+<script>
+  const {ipcRenderer} = require('electron')
+
+  function canvasPaintControl() {
+    const clearBtn = document.getElementById("clear");
+    const undoBtn = document.getElementById("undo");
+    const redoBtn = document.getElementById("redo");
+    const colorPicker = document.getElementById("color");
+    const linesize = document.getElementById("linesize");
+    const eraser = document.getElementById("eraser");
+    clearBtn.onclick = function () {
+      ipcRenderer.send('clear')
+    }
+    undoBtn.onclick = function () {
+      ipcRenderer.send('undo')
+    }
+    redoBtn.onclick = function () {
+      ipcRenderer.send('redo')
+    }
+    colorPicker.onchange = function () {
+      ipcRenderer.send('color', this.value)
+    }
+    linesize.onchange = function () {
+      ipcRenderer.send('linesize', this.value)
+    }
+    eraser.onchange = function () {
+      if (this.checked) {
+        ipcRenderer.send('eraser', true)
+      } else {
+        ipcRenderer.send('eraser', false)
+      }
+    }
+  }
+
+  function videoTrackControl() {
+    const controlDiv = document.getElementById("controlDiv");
+
+    const controls = [
+      'brightness',
+      'colorTemperature',
+      'contrast',
+      'focusDistance',
+      'saturation',
+      'sharpness',
+	  'exposureTime'
+    ]
+
+    ipcRenderer.on('videoConfig', (event, videoConfig) => {
+      const capabilities = videoConfig.capabilities;
+      const defaultSetting = videoConfig.settings;
+      for (const [key, value] of Object.entries(capabilities)) {
+        if (controls.indexOf(key) !== -1) {
+          value.value = defaultSetting[key];
+          value.name = key;
+          rendererControlBar(value, defaultSetting);
+        }
+      }
+    })
+
+    function registerInputEvent(inputElement) {
+      inputElement.oninput = async function () {
+
+        let optsObject = {}
+        optsObject[this.name] = this.value;
+
+        let opts = {
+          advanced: [optsObject]
+        };
+
+        ipcRenderer.send("applyConstraints", opts);
+      }
+    }
+
+    function registerCheckboxEvent(checkbokElement, inputElement) {
+      checkbokElement.oninput = async function () {
+        let optsObject = {}
+        if (this.checked) {
+          optsObject[this.dataset.mode] = "continuous";
+          inputElement.disabled = true
+        } else {
+          optsObject[this.dataset.mode] = "manual";
+          inputElement.disabled = false
+        }
+        let opts = {
+          advanced: [optsObject]
+        };
+        ipcRenderer.send("applyConstraints", opts);
+      }
+    }
+
+    function setCheckboxDefaultValue(checkbokElement, inputElement, defaultSetting) {
+      if (checkbokElement.name === "focusDistance") {
+        if ('focusMode' in defaultSetting) {
+          inputElement.disabled = true;
+          checkbokElement.disabled = false;
+          checkbokElement.checked = true;
+          checkbokElement.dataset.mode = 'focusMode';
+          registerCheckboxEvent(checkbokElement, inputElement)
+        }
+      }
+      if (checkbokElement.name === "colorTemperature") {
+        if ('whiteBalanceMode' in defaultSetting) {
+          inputElement.disabled = true;
+          checkbokElement.disabled = false;
+          checkbokElement.checked = true;
+          checkbokElement.dataset.mode = 'whiteBalanceMode';
+          registerCheckboxEvent(checkbokElement, inputElement)
+        }
+      }
+      if (checkbokElement.name === "exposureTime") {
+        if ('exposureMode' in defaultSetting) {
+          inputElement.disabled = true;
+          checkbokElement.disabled = false;
+          checkbokElement.checked = true;
+          checkbokElement.dataset.mode = 'exposureMode';
+          registerCheckboxEvent(checkbokElement, inputElement)
+        }
+      }
+
+    }
+
+    function rendererControlBar(val, defaultSetting) {
+      const controlBar = document.createElement("div");
+      controlBar.className = "controlBar"
+      const titleSpan = document.createElement("span");
+      titleSpan.innerText = val.name;
+      const rangeInput = document.createElement("input");
+      rangeInput.name = val.name;
+      rangeInput.type = "range";
+      rangeInput.max = val.max;
+      rangeInput.min = val.min;
+      rangeInput.step = val.step;
+      rangeInput.dataset.defaultval = val.value;
+      rangeInput.setAttribute("value", val.value)
+      const checkbox = document.createElement("input");
+      checkbox.name = val.name;
+      checkbox.type = "checkbox";
+      checkbox.disabled = true;
+
+      controlBar.appendChild(titleSpan);
+      controlBar.appendChild(rangeInput);
+      controlBar.appendChild(checkbox);
+
+      controlDiv.appendChild(controlBar);
+
+      registerInputEvent(rangeInput)
+      setCheckboxDefaultValue(checkbox, rangeInput, defaultSetting)
+    }
+  }
+
+  window.addEventListener('load', function () {
+    canvasPaintControl();
+    videoTrackControl();
+  })
+</script>
