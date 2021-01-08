@@ -1,4 +1,4 @@
-const {ipcRenderer} = require('electron')
+const { ipcRenderer } = require('electron')
 
 window.addEventListener('load', onload);
 
@@ -26,10 +26,14 @@ function onload() {
   const undoBtn = document.getElementById('undo');
   const redoBtn = document.getElementById('redo');
   const showControlBtn = document.getElementById('showControl');
+  const captureBtn = document.getElementById('capture');
+  const brushType = document.getElementById('brushType');
   const drawCtx = canvasPaint.getContext('2d');
   const drawScreen = new screenInfo();
 
+  // line circle rectangle
   let drawMode = 'brush';
+  drawMode = 'circle'
   let currentRatio = aspectRatio_16_9;
   let zoomRatio = 1.0;
   let zoomCounter = 0;
@@ -44,7 +48,8 @@ function onload() {
 
   setDisplaySize(currentRatio);
 
-  getUserMedia().then(videoStream => {
+  getUserMedia(
+  ).then(videoStream => {
 
     handleStream(inputVideo, videoStream);
     mergeStream(inputVideo);
@@ -116,9 +121,12 @@ function onload() {
     this.sourceX = 0;
     this.sourceY = 0;
     this.screenArray = [];
+    this.tempCanvas = document.createElement('canvas');
+    this.tempCtx = this.tempCanvas.getContext('2d');
 
     this.init = () => {
       drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
+      this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height)
       this.canvasStack = [];
       this.screenArray = [];
       this.step = -1;
@@ -140,6 +148,9 @@ function onload() {
         this.canvasStack.length = this.step;
       }
       this.canvasStack.push(canvasPaint.toDataURL('image/png'));
+      this.tempCanvas.width = canvasPaint.width;
+      this.tempCanvas.height = canvasPaint.height;
+      this.tempCtx.drawImage(canvasPaint, 0, 0, canvasPaint.width, canvasPaint.height)
     };
     this.pushScreen();
 
@@ -165,6 +176,11 @@ function onload() {
         this.drawScreen(this.canvasStack[this.step])
       }
     };
+
+    this.getScreenArray = () => {
+      return this.screenArray;
+    };
+
   }
 
   /**
@@ -218,17 +234,17 @@ function onload() {
 
     // custom device okiocam parms
     const setOkiocamConstraints = (id) => {
-      constraints.video.deviceId = {exact: id};
-      constraints.video.width = {min: 800, ideal: 1920, max: 1920};
-      constraints.video.height = {min: 600, ideal: 1080, max: 1544};
+      constraints.video.deviceId = { exact: id };
+      constraints.video.width = { min: 800, ideal: 1920, max: 1920 };
+      constraints.video.height = { min: 600, ideal: 1080, max: 1544 };
       // constraints.video.frameRate = {min: 24, ideal: 30, max: 30};
     };
 
     // other deicve webcam parms
     const setOthercamConstraints = (id) => {
-      constraints.video.deviceId = {exact: id};
-      constraints.video.width = {min: 640, ideal: 800, max: 1920};
-      constraints.video.height = {min: 360, ideal: 600, max: 1080};
+      constraints.video.deviceId = { exact: id };
+      constraints.video.width = { min: 640, ideal: 800, max: 1920 };
+      constraints.video.height = { min: 360, ideal: 600, max: 1080 };
       // constraints.video.frameRate = {ideal: 30, max: 30};
       constraints.video.aspectRatio = 1.777777778;
     };
@@ -307,10 +323,10 @@ function onload() {
 
   function handleRecorder(mediaStream) {
     let chunks = [];
-    const canvasRecorder = new MediaRecorder(mediaStream, {mimeType: 'video/webm;codecs=VP9'});
+    const canvasRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm;codecs=VP9' });
 
     canvasRecorder.ondataavailable = (e) => {
-      const blob = new Blob([e.data], {type: 'video/webm'});
+      const blob = new Blob([e.data], { type: 'video/webm' });
 
       chunks.push(blob);
     };
@@ -320,7 +336,7 @@ function onload() {
       recorderDot.classList.remove('dot');
       recoderPaintCheck.disabled = false;
 
-      const totalVideo = new Blob(chunks, {type: 'video/webm'});
+      const totalVideo = new Blob(chunks, { type: 'video/webm' });
 
       console.log(totalVideo);
 
@@ -362,7 +378,7 @@ function onload() {
     function mixerDraw() {
       for (let i = 0; i < mediaArray.length; i++) {
         let element = mediaArray[i];
-        let {sx, sy, sw, sh, dx, dy, dw, dh} = element.drawParms;
+        let { sx, sy, sw, sh, dx, dy, dw, dh } = element.drawParms;
         // console.log({sx, sy, sw, sh, dx, dy, dw, dh})
         mixedContext.drawImage(element.mediaElement, sx, sy, sw, sh, dx, dy, dw, dh);
       }
@@ -382,7 +398,6 @@ function onload() {
    */
   function mergeStream(mainVideo) {
     if (recoderPaintCheck.checked) {
-
       const outputWidth = canvasPaint.width;
       const outputHeight = canvasPaint.height;
 
@@ -433,8 +448,6 @@ function onload() {
       drawScreen.screenArray.push(videoRect)
       drawScreen.screenArray.push(canvasRect)
 
-      console.log(drawScreen.screenArray)
-
       let mixedStream = mixerStream(drawScreen.screenArray)
       handleRecorder(mixedStream);
 
@@ -451,7 +464,7 @@ function onload() {
       // canvasStream.top = 0;
       // canvasStream.left = 0;
       //
-      // // eslint-disable-next-line no-undef
+      // eslint-disable-next-line no-undef
       // const mixer = new MultiStreamsMixer([mediaStream, canvasStream]);
       // mixer.frameInterval = 1000 / 30;
       // mixer.startDrawingFrames();
@@ -497,17 +510,39 @@ function onload() {
         startX = e.offsetX;
         startY = e.offsetY;
         isDrawing = true;
-        pointStack.push({x: startX * ratio, y: startY * ratio});
+        if (drawMode === 'brush') {
+          pointStack.push({ x: startX * ratio, y: startY * ratio });
+        }
+        if (drawMode === 'line') {
+        }
       }
     }
 
     function mouseMove(e) {
       e.stopPropagation();
       if (isDrawing === true) {
-        drawCanvasLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
-        startX = e.offsetX;
-        startY = e.offsetY;
         canvasDiv.style.cursor = 'pointer';
+        if (drawMode === 'brush' || drawMode === 'eraser') {
+          drawCanvasLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
+          startX = e.offsetX;
+          startY = e.offsetY;
+        }
+        if (drawMode === 'line') {
+          drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+          drawCtx.drawImage(drawScreen.tempCanvas, 0, 0, canvasPaint.width, canvasPaint.height);
+          drawStraightLine(drawCtx, startX, startY, e.offsetX, e.offsetY)
+        }
+        if (drawMode === 'rectangle') {
+          drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+          drawCtx.drawImage(drawScreen.tempCanvas, 0, 0, canvasPaint.width, canvasPaint.height);
+          drawRectangle(drawCtx, startX, startY, e.offsetX, e.offsetY)
+        }
+        if (drawMode === 'circle') {
+          drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+          drawCtx.drawImage(drawScreen.tempCanvas, 0, 0, canvasPaint.width, canvasPaint.height);
+          drawCircle(drawCtx, startX, startY, e.offsetX, e.offsetY)
+        }
+
       }
       if (isDraging === true) {
         offsetX = e.offsetX - startX;
@@ -539,26 +574,52 @@ function onload() {
     function mouseUp(e) {
       e.stopPropagation();
       if (isDrawing === true) {
-        drawCanvasLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
-        startX = 0;
-        startY = 0;
-        isDrawing = false;
-        isDraging = false;
+        if (drawMode === 'brush') {
+          drawCanvasLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
+          startX = 0;
+          startY = 0;
+          isDrawing = false;
+          isDraging = false;
 
-        // 繪製剩下的points
-        if (prev !== pointStack.length && pointStack.length > prev) {
-          drawPoints(pointStack.slice(prev, pointStack.length), drawCtx);
+          // 繪製剩下的points
+          if (prev !== pointStack.length && pointStack.length > prev) {
+            drawPoints(pointStack.slice(prev, pointStack.length), drawCtx);
+          }
+
+          // drawCtx.lineWidth = 3;
+          // drawCtx.strokeStyle = 'black';
+          // drawScreen.pushScreen();
+          // drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
+          // drawPoints(pointStack,drawCtx);
+          // drawScreen.drawScreen(drawScreen.canvasStack[drawScreen.step])
+          drawScreen.pushScreen();
+          pointStack = [];
+          prev = 0;
         }
-
-        // drawCtx.lineWidth = 3;
-        // drawCtx.strokeStyle = 'black';
-        // drawScreen.pushScreen();
-        // drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
-        // drawPoints(pointStack,drawCtx);
-        // drawScreen.drawScreen(drawScreen.canvasStack[drawScreen.step])
-        drawScreen.pushScreen();
-        pointStack = [];
-        prev = 0;
+        if (drawMode === 'line') {
+          drawStraightLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
+          drawScreen.pushScreen();
+          startX = 0;
+          startY = 0;
+          isDrawing = false;
+          isDraging = false;
+        }
+        if (drawMode === 'rectangle') {
+          drawRectangle(drawCtx, startX, startY, e.offsetX, e.offsetY);
+          drawScreen.pushScreen();
+          startX = 0;
+          startY = 0;
+          isDrawing = false;
+          isDraging = false;
+        }
+        if (drawMode === 'circle') {
+          drawCircle(drawCtx, startX, startY, e.offsetX, e.offsetY);
+          drawScreen.pushScreen();
+          startX = 0;
+          startY = 0;
+          isDrawing = false;
+          isDraging = false;
+        }
       }
       if (isDraging === true) {
         startX = 0;
@@ -630,7 +691,7 @@ function onload() {
         // drawLineCtx.stroke();
         // drawLineCtx.closePath();
 
-        pointStack.push({x: canvasPoint.X2, y: canvasPoint.Y2});
+        pointStack.push({ x: canvasPoint.X2, y: canvasPoint.Y2 });
         let drawSmoothLine = () => {
           if (pointStack.length % drawGap === 0) {
             // drawLineCtx.lineWidth = 6;
@@ -660,6 +721,69 @@ function onload() {
         // drawLineCtx.clearRect(canvasPoint.X1 - lineWidth, canvasPoint.Y1 - lineWidth, 20 * 1.5, 20 * 1.5)
         // drawLineCtx.clearRect(canvasPoint.X2 - lineWidth, canvasPoint.Y2 - lineWidth, 20 * 1.5, 20 * 1.5)
       }
+    }
+
+    function drawStraightLine(drawStraightLineCtx, startX, startY, endX, endY) {
+      const ratio = getRatio();
+      startX *= ratio;
+      endX *= ratio;
+      startY *= ratio;
+      endY *= ratio;
+
+      drawStraightLineCtx.beginPath();
+      drawStraightLineCtx.moveTo(startX, startY);
+      drawStraightLineCtx.lineTo(endX, endY);
+      drawStraightLineCtx.stroke();
+      drawStraightLineCtx.closePath();
+    }
+
+    function drawRectangle(drawRectangleCtx, startX, startY, endX, endY) {
+      const ratio = getRatio();
+      startX *= ratio;
+      endX *= ratio;
+      startY *= ratio;
+      endY *= ratio;
+
+      let width = 1;
+      let height = 1;
+
+      if (startX < endX) {
+        width = endX - startX;
+      } else if (startX == endX) {
+        width = 0;
+      } else if (startX > endX) {
+        let temp = startX;
+        startX = endX;
+        width = temp - endX;
+      }
+
+      if (startY > endY) {
+        let temp = startY;
+        startY = endY;
+        height = temp - endY;
+      } else if (startY > endY) {
+        height = 0;
+      } else if (startY < endY) {
+        height = endY - startY;
+      }
+
+      drawRectangleCtx.strokeRect(startX, startY, width, height);
+    }
+
+    function drawCircle(drawCtx, startX, startY, x, y) {
+
+      const ratio = getRatio();
+      startX *= ratio;
+      x *= ratio;
+      startY *= ratio;
+      y *= ratio;
+
+      drawCtx.beginPath();
+      drawCtx.moveTo(startX, startY + (y - startY) / 2);
+      drawCtx.bezierCurveTo(startX, startY, x, startY, x, startY + (y - startY) / 2);
+      drawCtx.bezierCurveTo(x, y, startX, y, startX, startY + (y - startY) / 2);
+      drawCtx.closePath();
+      drawCtx.stroke();
     }
 
     function moveVideoAndCanvas(offsetX, offsetY) {
@@ -787,8 +911,6 @@ function onload() {
         drawMode = 'brush';
       }
     })
-    console.log(inputVideo.srcObject.getVideoTracks()[0].getCapabilities())
-
   }
 
   function zoomIn() {
@@ -904,6 +1026,32 @@ function onload() {
       showControlBtn.dataset.switch = '1';
       ipcRenderer.send('paintWindowControl', showControlBtn.dataset.switch)
     }
+  };
+
+  captureBtn.onclick = () => {
+    console.log(drawScreen.screenArray);
+    if (drawScreen.screenArray.length) {
+
+      let mixedCanvas = document.createElement('canvas');
+      let mixedContext = mixedCanvas.getContext('2d');
+
+      mixedCanvas.width = 1920;
+      mixedCanvas.height = 1080;
+
+      mixedContext.drawImage(inputVideo, 0, 0, 1920, 1080, 0, 0, 1920, 1080);
+      mixedContext.drawImage(canvasPaint, 0, 0, canvasPaint.width, canvasPaint.height, 0, 0, 1920, 1080);
+
+      let img = mixedCanvas.toDataURL("image/jpeg");
+      let link = document.createElement("a");
+      link.href = img;
+      link.download = true;
+      link.click();
+
+    }
+  };
+
+  brushType.onchange = () => {
+    drawMode = brushType.value;
   }
 
   $('#colorPicker').spectrum({

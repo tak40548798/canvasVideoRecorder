@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -8,101 +9,116 @@
     <script src="lib/spectrum.min.js"></script>
     <script src="lib/MultiStreamsMixer.js"></script>
     <script src="js/index.js" type="module"></script>
-    <link href="lib/spectrum.min.css" rel="stylesheet" type="text/css" >
+    <link href="lib/spectrum.min.css" rel="stylesheet" type="text/css">
     <link href="style.css" rel="stylesheet">
 </head>
 
 <body style="margin: 0px;font-family:Microsoft JhengHei;">
 
-<div id="constraint">
+    <div id="constraint">
 
-    <div class="container">
-        <div class="topbar">
-            <div class="topbarDiv">
-                <div style="display:inline-block;">
-                    <div style="display: inline-block;margin-left: 20px;font-size: 1rem;font-weight:600;">
-                        Choose-Cam：
-                    </div>
-                    <select id="selectCamera_1" name="selectCamera_1" style="font-size:0.9rem;max-width: 150px;">
-                        style="width: 120px;height: 24px;margin: 6px;margin-left: 0px;">
-                    </select>
-                </div>
-                <div id="camera2Div" style="display:none">
-                    <div style="display: inline-block;margin-left: 12px;">
-                        Camera_2：
-                    </div>
-                    <select id="selectCamera_2" name="selectCamera_2"
+        <div class="container">
+            <div class="topbar">
+                <div class="topbarDiv">
+                    <div style="display:inline-block;">
+                        <div style="display: inline-block;margin-left: 20px;font-size: 1rem;font-weight:600;">
+                            Choose-Cam：
+                        </div>
+                        <select id="selectCamera_1" name="selectCamera_1" style="font-size:0.9rem;max-width: 150px;">
                             style="width: 120px;height: 24px;margin: 6px;margin-left: 0px;">
-                    </select>
-                </div>
-
-            </div>
-        </div>
-        <div class="sidebar" style="border-radius: 6px;">
-            <!-- sidebar -->
-            <div style="display: flex;flex-wrap: wrap;justify-content:center;margin: 10px;user-select: none">
-                <div class="menuBtn" id="ZoomIn">
-                    ZoomIn
-                </div>
-                <div class="menuBtn" id="ZoomOut">
-                    ZoomOut
-                </div>
-                <div class="menuBtn" data-moveevent='1' id="MoveOrDraw">
-                    MoveType
-                </div>
-                <div class="inlineBtn"><input checked id="recoderCheck" type="checkbox">RecordPaint</div>
-                <div class="menuBtn" id="playVideo" style="display: none;">
-                    PlayVideo
-                </div>
-                <div class="menuBtn" id="startRecorder">
-                    StartRecorder
-                </div>
-                <div class="menuBtn" id="stopRecorder">
-                    StopRecorder
-                </div>
-                <div class="menuBtn" id="clearCanvas">
-                    ClearCanvas
-                </div>
-                <div class="inlineBtn"><input id="drawStates" type="checkbox">Eraser</div>
-
-                <div class="inlineBtn" style="display: flex;justify-items: start;">
-                    <input id="colorPicker" name="colorPicker" style="margin:auto" type="color" value='#2894FF'>
-                    <input id="lineWidth" max="50" min="5" name="lineWidth"
-                           step="5" style="width: 40%;margin:auto;" type="number" value=5>
-                </div>
-
-                <div class="inlineBtn" style="display: flex;justify-items: start;" stylepseudo=":hover {color: red}">
-                    <div class="menuBtn" id="undo" style="background-color: aliceblue;max-width: 30%;">
-                        undo
+                        </select>
                     </div>
-                    <div class="menuBtn" id="redo" style="background-color: aliceblue;max-width: 30%;">
-                        redo
+                    <div id="camera2Div" style="display:none">
+                        <div style="display: inline-block;margin-left: 12px;">
+                            Camera_2：
+                        </div>
+                        <select id="selectCamera_2" name="selectCamera_2"
+                            style="width: 120px;height: 24px;margin: 6px;margin-left: 0px;">
+                        </select>
                     </div>
+
                 </div>
+            </div>
+            <div class="sidebar" style="border-radius: 6px;">
+                <!-- sidebar -->
+                <div style="display: flex;flex-wrap: wrap;justify-content:center;margin: 10px;user-select: none">
+                    <div class="menuBtn" id="ZoomIn">
+                        ZoomIn
+                    </div>
+                    <div class="menuBtn" id="ZoomOut">
+                        ZoomOut
+                    </div>
+                    <div class="menuBtn" data-moveevent='1' id="MoveOrDraw">
+                        MoveType
+                    </div>
+                    <div class="inlineBtn"><input checked id="recoderCheck" type="checkbox">RecordPaint</div>
+                    <div class="menuBtn" id="playVideo" style="display: none;">
+                        PlayVideo
+                    </div>
+                    <div class="menuBtn" id="startRecorder">
+                        StartRecorder
+                    </div>
+                    <div class="menuBtn" id="stopRecorder">
+                        StopRecorder
+                    </div>
+                    <div class="menuBtn" id="clearCanvas">
+                        ClearCanvas
+                    </div>
+                    <div class="inlineBtn"><input id="drawStates" type="checkbox">Eraser</div>
 
-                <div class="menuBtn" id="showControl" data-switch="0">
-                    showControl
+                    <div class="inlineBtn" style="display: flex;justify-items: start;">
+                        <input id="colorPicker" name="colorPicker" style="margin:auto" type="color" value='#2894FF'>
+                        <input id="lineWidth" max="50" min="5" name="lineWidth" step="5" style="width: 40%;margin:auto;"
+                            type="number" value=5>
+                    </div>
+                    <div class="inlineBtn" style="display: flex;justify-items: start;"
+                        stylepseudo=":hover {color: red}">
+                        <select name="" id="brushType" style="width: 80%;margin: auto;">
+                            <option value="brush" selected>brush</option>
+                            <option value="line">line</option>
+                            <option value="rectangle">rectangle</option>
+                            <option value="circle">circle</option>
+                        </select>
+                    </div>
+
+                    <div class="inlineBtn" style="display: flex;justify-items: start;"
+                        stylepseudo=":hover {color: red}">
+                        <div class="menuBtn" id="undo" style="background-color: aliceblue;max-width: 30%;">
+                            undo
+                        </div>
+                        <div class="menuBtn" id="redo" style="background-color: aliceblue;max-width: 30%;">
+                            redo
+                        </div>
+                    </div>
+
+                    <div class="menuBtn" id="showControl" data-switch="0">
+                        showControl
+                    </div>
+
+                    <div class="menuBtn" id="capture" data-switch="0" style="display: none;">
+                        capture
+                    </div>
+
+
                 </div>
+            </div>
+            <div id="main">
+                <div id="canvasDiv" style="border-radius: 6px;">
+                    <span id="recorderDot"></span>
 
+                    <canvas id="canvasPaint">
 
+                    </canvas>
+                    <video autoplay controls id="inputVideo" style="display: block;">
+
+                    </video>
+                </div>
             </div>
         </div>
-        <div id="main">
-            <div id="canvasDiv" style="border-radius: 6px;">
-                <span id="recorderDot"></span>
+        <video id="mixStreamVideo" style="display: none;width: 80vw;height: calc(80vw / 16 * 9);margin: 30px auto;">
+        </video>
 
-                <canvas id="canvasPaint">
-
-                </canvas>
-                <video autoplay controls id="inputVideo" style="display: block;">
-
-                </video>
-            </div>
-        </div>
     </div>
-    <video id="mixStreamVideo" style="display: none;width: 80vw;height: calc(80vw / 16 * 9);margin: 30px auto;">
-    </video>
-
-</div>
 </body>
+
 </html>
