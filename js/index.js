@@ -31,9 +31,8 @@ function onload() {
   const drawCtx = canvasPaint.getContext('2d');
   const drawScreen = new screenInfo();
 
-  // line circle rectangle
+  // brush line circle rectangle
   let drawMode = 'brush';
-  drawMode = 'circle'
   let currentRatio = aspectRatio_16_9;
   let zoomRatio = 1.0;
   let zoomCounter = 0;
