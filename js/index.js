@@ -535,6 +535,7 @@ function onload() {
         isDrawing = true;
         if (drawMode === 'brush') {
           pointStack.push({x: startX * ratio, y: startY * ratio});
+          drawCanvasLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
         }
       }
     }
@@ -574,6 +575,7 @@ function onload() {
           startX = e.offsetX;
           startY = e.offsetY;
         }
+
       }
       // 拖動
       if (isDraging === true) {
@@ -606,63 +608,40 @@ function onload() {
       e.stopPropagation();
       // 繪製
       if (isDrawing === true) {
-
-        switch (drawMode) {
-          case 'brush':
-            drawCanvasLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
-
-            // 繪製剩下的points
-            if (prev !== pointStack.length && pointStack.length > prev) {
-              drawPoints(pointStack.slice(prev, pointStack.length), drawCtx);
-            }
-
-            // drawCtx.lineWidth = 3;
-            // drawCtx.strokeStyle = 'black';
-            // drawScreen.pushScreen();
-            // drawCtx.clearRect(0, 0, canvasPaint.width, canvasPaint.height)
-            // drawPoints(pointStack,drawCtx);
-            // drawScreen.drawScreen(drawScreen.canvasStack[drawScreen.step])
-            drawScreen.pushScreen();
-            pointStack = [];
-            prev = 0;
-
-            break;
-          case 'line':
-            drawStraightLine(drawCtx, startX, startY, e.offsetX, e.offsetY);
-            drawScreen.pushScreen();
-            break;
-          case 'rectangle':
-            drawRectangle(drawCtx, startX, startY, e.offsetX, e.offsetY);
-            drawScreen.pushScreen();
-            break;
-          case 'circle':
-            drawCircle(drawCtx, startX, startY, e.offsetX, e.offsetY);
-            drawScreen.pushScreen();
-            break;
-        }
-
+        drawScreen.pushScreen();
+        startX = 0;
+        startY = 0;
+        pointStack = [];
+        prev = 0;
+        isDrawing = false;
+        isDraging = false;
       }
       // 拖動
       if (isDraging === true) {
         offsetX = 0;
         offsetY = 0;
+        isDrawing = false;
+        isDraging = false;
       }
-
-      startX = 0;
-      startY = 0;
-      isDrawing = false;
-      isDraging = false;
-
       canvasDiv.style.cursor = '';
     }
 
     function mouseOut(e) {
       e.stopPropagation();
+      // 繪製
       if (isDrawing === true) {
+        drawScreen.pushScreen();
+        startX = 0;
+        startY = 0;
+        pointStack = [];
+        prev = 0;
         isDrawing = false;
         isDraging = false;
       }
+      // 拖動
       if (isDraging === true) {
+        offsetX = 0;
+        offsetY = 0;
         isDrawing = false;
         isDraging = false;
       }
